@@ -1433,11 +1433,14 @@ function getRate(r, type) {
   return type==='bid' ? r.bid : type==='ask' ? r.ask : r.mid;
 }
 
-function todayStr() { return new Date().toISOString().split('T')[0]; }
+function todayStr() {
+  return new Date().toLocaleDateString('en-CA');
+}
 
 function prevDay(d) {
-  const dt = new Date(d); dt.setDate(dt.getDate()-1);
-  return dt.toISOString().split('T')[0];
+  const dt = new Date(d + 'T12:00:00');
+  dt.setDate(dt.getDate() - 1);
+  return dt.toLocaleDateString('en-CA');
 }
 
 'function decimals(r) {
