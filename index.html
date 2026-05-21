@@ -1440,6 +1440,16 @@ function prevDay(d) {
   return dt.toISOString().split('T')[0];
 }
 
+'function decimals(r) {
+'  if (!r || isNaN(r)) return 4;
+'  if (r >= 10000) return 0;
+'  if (r >= 1000) return 1;
+'  if (r >= 100) return 2;
+'  if (r >= 10) return 3;
+'  if (r >= 1) return 4;
+'  return 6;
+'}
+   
 function decimals(r) {
   return 6;
 }
