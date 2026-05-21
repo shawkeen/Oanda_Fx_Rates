@@ -1,3 +1,5 @@
+html
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1433,26 +1435,13 @@ function getRate(r, type) {
   return type==='bid' ? r.bid : type==='ask' ? r.ask : r.mid;
 }
 
-function todayStr() {
-  return new Date().toISOString().split('T')[0];
-}
+function todayStr() { return new Date().toISOString().split('T')[0]; }
 
 function prevDay(d) {
-  const dt = new Date(d);
-  dt.setDate(dt.getDate()-1);
+  const dt = new Date(d); dt.setDate(dt.getDate()-1);
   return dt.toISOString().split('T')[0];
 }
 
-'function decimals(r) {
-'  if (!r || isNaN(r)) return 4;
-'  if (r >= 10000) return 0;
-'  if (r >= 1000) return 1;
-'  if (r >= 100) return 2;
-'  if (r >= 10) return 3;
-'  if (r >= 1) return 4;
-'  return 6;
-'}
-   
 function decimals(r) {
   return 6;
 }
