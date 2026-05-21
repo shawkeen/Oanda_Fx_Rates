@@ -541,8 +541,8 @@ footer a:hover { text-decoration: underline; }
       <div class="ctrl">
         <span class="ctrl-label">Rate Type</span>
         <div class="toggle-row">
-          <button class="toggle-btn" data-rt="bid" onclick="setRateType('bid')">Avg Bid</button>
-          <button class="toggle-btn on" data-rt="ask" onclick="setRateType('ask')">Avg Ask</button>
+          <button class="toggle-btn on" data-rt="bid" onclick="setRateType('bid')">Avg Bid</button>
+          <button class="toggle-btn" data-rt="ask" onclick="setRateType('ask')">Avg Ask</button>
           <button class="toggle-btn" data-rt="mid" onclick="setRateType('mid')">Mid Rate</button>
         </div>
       </div>
@@ -784,7 +784,7 @@ const S = {
   favs:      new Set(JSON.parse(localStorage.getItem('fx_favs') || '[]')),
   results:   {},           // code → {bid,ask,mid,date}
   pasteRes:  [],           // [{code,name,data}]
-  rateType:  'ask',
+  rateType:  'bid',
   base:      'USD',
   sortCol:   'code',
   sortDir:   1,
@@ -1441,12 +1441,6 @@ function prevDay(d) {
 }
 
 function decimals(r) {
-  if (!r || isNaN(r)) return 4;
-  if (r >= 10000) return 0;
-  if (r >= 1000) return 1;
-  if (r >= 100) return 2;
-  if (r >= 10) return 3;
-  if (r >= 1) return 4;
   return 6;
 }
 
