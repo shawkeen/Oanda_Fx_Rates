@@ -1434,13 +1434,13 @@ function getRate(r, type) {
 }
 
 function todayStr() {
-  return new Date().toLocaleDateString('en-CA');
+  return new Date().toISOString().split('T')[0];
 }
 
 function prevDay(d) {
-  const dt = new Date(d + 'T12:00:00');
-  dt.setDate(dt.getDate() - 1);
-  return dt.toLocaleDateString('en-CA');
+  const dt = new Date(d);
+  dt.setDate(dt.getDate()-1);
+  return dt.toISOString().split('T')[0];
 }
 
 'function decimals(r) {
