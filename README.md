@@ -1,6 +1,6 @@
 # FX Rate Terminal
 
-> Live & historical exchange rates for 59 currencies — all in one sleek, self-contained HTML file.
+> Live & historical exchange rates for 58 currencies — all in one sleek, self-contained HTML file.
 
 ![FX Rate Terminal](https://img.shields.io/badge/currencies-59-f0a000?style=flat-square)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-zero-00d4c8?style=flat-square)
@@ -12,7 +12,7 @@
 ## Features
 
 - **Live ticker** — scrolling real-time rates for 16 major pairs across the top of the page
-- **59 currencies** — from G10 majors to frontier-market currencies
+- **58 currencies** — from G10 majors to frontier-market currencies
 - **Custom base currency** — USD, EUR, GBP, JPY, CHF, CAD, AUD, CNY, INR, SGD
 - **Rate types** — Average Bid, Average Ask, or Mid Rate
 - **Historical lookups** — pick any past date; data goes back years via OANDA
