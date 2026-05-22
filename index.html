@@ -655,6 +655,20 @@ footer a:hover { text-decoration: underline; }
       <div class="card-subtitle">Paste a currency column directly from Excel or any spreadsheet</div>
     </div>
 
+   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:0.82rem;color:var(--text2)">
+    <div id="dedupToggle" onclick="toggleDedup()"
+      style="width:38px;height:20px;border-radius:99px;background:var(--surface3);border:1px solid var(--border2);
+             position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0">
+      <div id="dedupKnob"
+        style="width:14px;height:14px;border-radius:50%;background:var(--text3);
+               position:absolute;top:2px;left:2px;transition:all 0.2s"></div>
+    </div>
+    Unique currencies only
+    <span style="font-size:0.7rem;color:var(--text3);font-weight:400">(off = show every row as pasted)</span>
+  </label>
+</div>
+
     <textarea id="pasteArea" placeholder="Paste here — one currency per row, or an Excel column:
 EUR
 GBP
@@ -783,6 +797,7 @@ const TICKER_CODES = ["EUR","GBP","JPY","CHF","CAD","AUD","CNY","INR","SGD","HKD
 /* ─── STATE ─── */
 const S = {
   sel:       new Set(),
+  dedupeMode: false,
   favs:      new Set(JSON.parse(localStorage.getItem('fx_favs') || '[]')),
   results:   {},           // code → {bid,ask,mid,date}
   pasteRes:  [],           // [{code,name,data}]
@@ -1262,8 +1277,10 @@ async function runPaste() {
   const raw = document.getElementById('pasteArea').value.trim();
   if (!raw) { toast('Nothing pasted yet!', 'err'); return; }
 
-  const codes = parsePaste(raw);
-  if (!codes.length) { toast('No valid currency codes found', 'err'); return; }
+  const allCodes = parsePaste(raw);           // may contain duplicates
+  if (!allCodes.length) { toast('No valid currency codes found', 'err'); return; }
+
+  const uniqueCodes = [...new Set(allCodes)]; // only fetch each code once
 
   const btn = document.getElementById('pasteBtn');
   setLoading(btn, true);
@@ -1272,21 +1289,21 @@ async function runPaste() {
   const date = document.getElementById('dateInput').value;
   const prev = prevDay(date);
 
-  S.pasteRes = [];
   let done = 0, corsErr = false;
   const raw_results = {};
 
-  for (let i = 0; i < codes.length; i += 6) {
-    const batch = codes.slice(i, i + 6);
+  for (let i = 0; i < uniqueCodes.length; i += 6) {
+    const batch = uniqueCodes.slice(i, i + 6);
     await Promise.allSettled(batch.map(async code => {
       try { raw_results[code] = await apiCall('USD', code, prev, date); }
       catch (err) { if (err.message?.includes('fetch')) corsErr = true; }
       done++;
-      setProg('pasteProgBar', done / codes.length);
+      setProg('pasteProgBar', done / uniqueCodes.length);
     }));
   }
 
-  S.pasteRes = codes.map(code => ({
+  // Map back to full list (preserving duplicates)
+  S.pasteRes = allCodes.map(code => ({
     code, name: CUR[code]||code, data: raw_results[code]||null
   }));
 
@@ -1303,7 +1320,8 @@ async function runPaste() {
   document.getElementById('pasteSection').style.display = 'block';
   document.getElementById('pasteSection').scrollIntoView({ behavior:'smooth', block:'nearest' });
   const ok = S.pasteRes.filter(r => r.data).length;
-  toast(`✓ ${ok}/${codes.length} currencies fetched`, 'ok');
+  const dupeNote = allCodes.length > uniqueCodes.length ? ` (${uniqueCodes.length} unique)` : '';
+  toast(`✓ ${ok}/${allCodes.length} rows fetched${dupeNote}`, 'ok');
 }
 
 function parsePaste(raw) {
@@ -1312,13 +1330,30 @@ function parsePaste(raw) {
   raw.split('\n').forEach(line => {
     line.split(/[\t,;|\s]+/).forEach(token => {
       const clean = token.trim().toUpperCase().replace(/[^A-Z]/g, '');
-      if (clean.length === 3 && allCodes.includes(clean) && !seen.has(clean)) {
-        found.push(clean);
+      if (clean.length === 3 && allCodes.includes(clean)) {
+        if (!S.dedupeMode || !seen.has(clean)) {
+          found.push(clean);
+        }
         seen.add(clean);
       }
     });
   });
   return found;
+}
+
+function toggleDedup() {
+  S.dedupeMode = !S.dedupeMode;
+  const knob = document.getElementById('dedupKnob');
+  const track = document.getElementById('dedupToggle');
+  if (S.dedupeMode) {
+    track.style.background = 'var(--amber)';
+    knob.style.left = '20px';
+    knob.style.background = '#000';
+  } else {
+    track.style.background = 'var(--surface3)';
+    knob.style.left = '2px';
+    knob.style.background = 'var(--text3)';
+  }
 }
 
 function renderPasteTable() {
