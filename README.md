@@ -2,7 +2,7 @@
 
 > Live & historical exchange rates for 58 currencies — all in one sleek, self-contained HTML file.
 
-![FX Rate Terminal](https://img.shields.io/badge/currencies-59-f0a000?style=flat-square)
+![FX Rate Terminal](https://img.shields.io/badge/currencies-58-f0a000?style=flat-square)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-zero-00d4c8?style=flat-square)
 ![Single file](https://img.shields.io/badge/delivery-single%20HTML%20file-00c97a?style=flat-square)
 ![OANDA API](https://img.shields.io/badge/data-OANDA%20Public%20API-f04060?style=flat-square)
