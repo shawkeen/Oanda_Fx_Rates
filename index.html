@@ -833,11 +833,26 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ─── TICKER ─── */
 async function loadTicker() {
   const date = todayStr();
-  const prev = prevDay(date);
+  const twoDaysAgo = prevDay(prevDay(date));
   await Promise.allSettled(TICKER_CODES.map(async code => {
     try {
-      const r = await apiCall('USD', code, prev, date);
-      if (r) S.tickerDat[code] = r;
+      const p = new URLSearchParams({ base:'USD', quote:code, data_type:'general_currency_pair', start_date:twoDaysAgo, end_date:date });
+      const res = await fetch(`${API}?${p}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const entries = json.response || [];
+      if (!entries.length) return;
+      const latest = entries[entries.length - 1];
+      const bid = parseFloat(latest.average_bid), ask = parseFloat(latest.average_ask);
+      if (isNaN(bid) || isNaN(ask)) return;
+      const mid = (bid + ask) / 2;
+      let prevMid = null;
+      if (entries.length >= 2) {
+        const prev = entries[entries.length - 2];
+        const pb = parseFloat(prev.average_bid), pa = parseFloat(prev.average_ask);
+        if (!isNaN(pb) && !isNaN(pa)) prevMid = (pb + pa) / 2;
+      }
+      S.tickerDat[code] = { bid, ask, mid, date:(latest.close_time||'').slice(0,10), prevMid };
     } catch {}
   }));
   drawTicker(Object.keys(S.tickerDat).length > 0 ? Object.keys(S.tickerDat) : TICKER_CODES);
@@ -850,10 +865,17 @@ function drawTicker(codes) {
   const mkItem = code => {
     const r = S.tickerDat[code];
     const rate = getRate(r, 'ask');
+    let chg = '';
+    if (r.prevMid != null) {
+      if (r.mid > r.prevMid)      chg = `<span style="color:#f04060;font-size:0.7rem">▲</span>`;
+      else if (r.mid < r.prevMid) chg = `<span style="color:#00c97a;font-size:0.7rem">▼</span>`;
+      else                        chg = `<span style="color:#516070;font-size:0.7rem">●</span>`;
+    }
     return `<span class="tkr-item">
       <span class="tkr-flag">${FLAGS[code]||''}</span>
       <span class="tkr-pair">USD/${code}</span>
       <span class="tkr-rate">${fmt(rate, decimals(rate))}</span>
+      ${chg}
     </span>`;
   };
   const half = availCodes.map(mkItem).join('');
@@ -861,7 +883,7 @@ function drawTicker(codes) {
 }
 
 function setTickerSpeed(val) {
-  const dur = Math.round(200 - (val / 100) * 175);
+  const dur = Math.round(200 - (val / 100) * 187.5);
   document.getElementById('tkrInner').style.animationDuration = dur + 's';
 }
 
