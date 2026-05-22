@@ -488,7 +488,7 @@ footer a:hover { text-decoration: underline; }
   </div>
   <div class="tkr-ctrl">
     <span class="tkr-ctrl-label">Speed</span>
-    <input type="range" id="spdSlider" min="1" max="100" value="45" oninput="setTickerSpeed(this.value)">
+    <input type="range" id="spdSlider" min="1" max="100" value="50" oninput="setTickerSpeed(this.value)">
   </div>
 </div>
 
@@ -827,13 +827,25 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrop(); });
 
   setTickerSpeed(document.getElementById('spdSlider').value);
+  drawTickerSeed();
   loadTicker();
 });
 
+function drawTickerSeed() {
+  const half = TICKER_CODES.map(code =>
+    `<span class="tkr-item">
+      <span class="tkr-flag">${FLAGS[code]||''}</span>
+      <span class="tkr-pair">USD/${code}</span>
+      <span class="tkr-rate" style="color:var(--text3)">···</span>
+    </span>`
+  ).join('');
+  document.getElementById('tkrInner').innerHTML = half + half;
+}
+   
 /* ─── TICKER ─── */
 async function loadTicker() {
   const date = todayStr();
-  const twoDaysAgo = prevDay(prevDay(date));
+  const twoDaysAgo = nDaysAgo(date, 7);
   await Promise.allSettled(TICKER_CODES.map(async code => {
     try {
       const p = new URLSearchParams({ base:'USD', quote:code, data_type:'general_currency_pair', start_date:twoDaysAgo, end_date:date });
@@ -856,6 +868,11 @@ async function loadTicker() {
     } catch {}
   }));
   drawTicker(Object.keys(S.tickerDat).length > 0 ? Object.keys(S.tickerDat) : TICKER_CODES);
+}
+
+function nDaysAgo(d, n) {
+  const dt = new Date(d); dt.setDate(dt.getDate() - n);
+  return dt.toISOString().split('T')[0];
 }
 
 function drawTicker(codes) {
@@ -1134,9 +1151,13 @@ async function fetchRates() {
   document.getElementById('lastUpdated').innerHTML =
     `<span class="hdr-pill-dot" style="background:var(--green)"></span> Updated ${new Date().toLocaleTimeString()}`;
 
-  // Refresh ticker with latest data
-  Object.assign(S.tickerDat, S.results);
-  drawTicker(codes);
+  // Refresh ticker with latest data — preserve prevMid from initial load
+codes.forEach(code => {
+  if (S.results[code]) {
+    S.tickerDat[code] = { ...S.results[code], prevMid: S.tickerDat[code]?.prevMid ?? null };
+  }
+});
+drawTicker(codes);
 
   renderStats();
   renderTable();
