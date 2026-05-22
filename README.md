@@ -68,6 +68,11 @@ They are **indicative** and intended for reference only — not for trading or f
 
 ## File Structure
 
+~~~
+fx-rate-terminal.html   ← entire app: HTML + CSS + JS in one file
+README.md
+~~~
+
 ---
 
 ## Browser Support
