@@ -67,3 +67,15 @@ They are **indicative** and intended for reference only — not for trading or f
 ---
 
 ## File Structure
+
+---
+
+## Browser Support
+
+Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+
+---
+
+## License
+
+MIT — do whatever you like with it.
