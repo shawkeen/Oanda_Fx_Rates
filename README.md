@@ -30,7 +30,7 @@
 
 ```bash
 # Clone
-git clone https://github.com/your-username/fx-rate-terminal.git
+git clone https://github.com/shawkeen/fx-rate-terminal.git
 
 # Open — that's it
 open fx-rate-terminal.html
