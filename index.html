@@ -1,537 +1,320 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FX Rate Terminal · Live Exchange Rates</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   DESIGN TOKENS — Neo-Trading Terminal Aesthetic
-   Dominant: Deep navy · Accent: Amber + Cyan · Mono type
-   ============================================================ */
-:root {
-  --bg:        #070a10;
-  --bg2:       #0b0e17;
-  --surface:   #0f1420;
-  --surface2:  #131826;
-  --surface3:  #18202e;
-  --border:    #1d2a3a;
-  --border2:   #243348;
-  --amber:     #f0a000;
-  --amber-l:   #fbbf24;
-  --amber-d:   #c07c00;
-  --amber-bg:  rgba(240,160,0,0.08);
-  --amber-bg2: rgba(240,160,0,0.14);
-  --cyan:      #00d4c8;
-  --cyan-d:    #00a89e;
-  --cyan-bg:   rgba(0,212,200,0.08);
-  --green:     #00c97a;
-  --green-bg:  rgba(0,201,122,0.08);
-  --red:       #f04060;
-  --red-bg:    rgba(240,64,96,0.08);
-  --text:      #dde4f0;
-  --text2:     #8899b0;
-  --text3:     #516070;
-  --font:      'DM Sans', system-ui, sans-serif;
-  --mono:      'JetBrains Mono', 'Courier New', monospace;
-  --r:         10px;
-  --r-lg:      14px;
+:root{
+  --bg:#070a10; --bg2:#0b0e17; --surface:#0f1420; --surface2:#131826; --surface3:#18202e;
+  --border:#1d2a3a; --border2:#243348; --amber:#f0a000; --amber2:#fbbf24; --cyan:#00d4c8;
+  --green:#00c97a; --red:#f04060; --text:#dde4f0; --text2:#8a98ac; --text3:#576679;
+  --font:'DM Sans', system-ui, sans-serif; --mono:'JetBrains Mono', 'Courier New', monospace;
+  --r:10px; --r2:14px;
 }
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  padding-top: 54px;
-  -webkit-font-smoothing: antialiased;
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{
+  margin:0; padding-top:54px; min-height:100vh; color:var(--text); font-family:var(--font);
+  background:var(--bg);
+  -webkit-font-smoothing:antialiased;
   background-image:
     radial-gradient(ellipse 80% 40% at 50% -10%, rgba(240,160,0,0.04) 0%, transparent 60%),
     repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(29,42,58,0.35) 40px),
     repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(29,42,58,0.2) 80px);
 }
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--bg2); }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+#ticker{
+  position:fixed; inset:0 0 auto 0; height:54px; z-index:1000;
+  display:flex; align-items:center; background:var(--surface); border-bottom:1px solid var(--border);
+  box-shadow:0 2px 20px rgba(0,0,0,.4);
+}
+.tkr-badge{
+  flex:0 0 auto; height:100%; min-width:96px; padding:0 18px; display:flex; align-items:center; gap:8px;
+  border-right:1px solid var(--border); background:var(--surface2);
+  font-size:.65rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3);
+}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(240,160,0,.35)}50%{opacity:.65;box-shadow:0 0 0 6px rgba(240,160,0,0)}}
+.tkr-track{flex:1; overflow:hidden; height:100%}
+.tkr-inner{display:inline-flex; align-items:center; animation:marquee var(--spd,90s) linear infinite}
+.tkr-track:hover .tkr-inner{animation-play-state:paused}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tkr-item{
+  display:inline-flex; align-items:center; gap:7px; height:54px; padding:0 18px;
+  border-right:1px solid rgba(255,255,255,.05); white-space:nowrap;
+}
+.tkr-item:hover{background:var(--surface2)}
+.tkr-flag{font-size:.95rem}
+.tkr-pair{font-size:.72rem; color:var(--text3); font-weight:500}
+.tkr-rate{font-family:var(--mono); font-size:.8rem; font-weight:700; color:var(--text)}
+.tkr-chg{font-size:.72rem; line-height:1}
+.tkr-ctrl{
+  flex:0 0 auto; height:100%; padding:0 14px; display:flex; align-items:center; gap:8px;
+  border-left:1px solid var(--border); background:var(--surface2);
+}
+.tkr-ctrl-label{font-size:.6rem; color:var(--text3); text-transform:uppercase; letter-spacing:.8px}
+input[type=range]{accent-color:var(--amber); cursor:pointer}
 
-/* ============================================================  TICKER  */
-#ticker {
-  position: fixed; top: 0; left: 0; right: 0; height: 54px; z-index: 1000;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center;
-  box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+.hdr{
+  position:relative; overflow:hidden; background:linear-gradient(180deg, var(--surface2) 0%, var(--bg) 100%);
+  border-bottom:1px solid var(--border); padding:44px 24px 28px;
 }
-.tkr-badge {
-  flex-shrink: 0; padding: 0 18px;
-  display: flex; align-items: center; gap: 8px;
-  border-right: 1px solid var(--border);
-  height: 100%; min-width: 90px;
-  font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; color: var(--text3);
-  background: var(--surface2);
+.hdr::after{content:''; position:absolute; inset:auto 0 -1px 0; height:1px; background:linear-gradient(90deg, transparent, var(--amber), var(--cyan), transparent); opacity:.25}
+.hdr-inner{max-width:1180px; margin:0 auto; display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap}
+.hdr-eyebrow{display:flex; align-items:center; gap:8px; margin-bottom:10px; color:var(--amber); text-transform:uppercase; letter-spacing:2px; font-size:.68rem; font-weight:700}
+.hdr-eyebrow::before{content:''; width:20px; height:1px; background:var(--amber); display:block}
+.hdr-title{
+  margin:0; font-size:2.2rem; line-height:1.1; letter-spacing:-1px;
+  background:linear-gradient(135deg, var(--amber2) 0%, var(--amber) 35%, var(--cyan) 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
 }
-.live-dot {
-  width: 7px; height: 7px; border-radius: 50%; background: var(--amber);
-  animation: pulse 2s ease infinite; flex-shrink: 0;
+.hdr-sub{margin-top:8px; color:var(--text2); font-size:.88rem}
+.hdr-pills{display:flex; flex-wrap:wrap; gap:8px}
+.hdr-pill{
+  display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border-radius:999px;
+  border:1px solid var(--border2); background:var(--surface); color:var(--text2); font-size:.73rem; font-weight:500;
 }
-@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(240,160,0,0.4)} 50%{opacity:0.6;box-shadow:0 0 0 5px rgba(240,160,0,0)} }
+.hdr-pill-dot{width:6px;height:6px;border-radius:50%}
+.container{max-width:1180px; margin:0 auto; padding:28px 20px 80px}
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r2);
+  padding:22px; margin-bottom:18px; position:relative;
+}
+.card::before{content:''; position:absolute; inset:0 24px auto 24px; height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent)}
+.card-hd{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px}
+.card-title{display:flex; align-items:center; gap:10px; color:var(--amber); text-transform:uppercase; letter-spacing:1.2px; font-size:.73rem; font-weight:700}
+.card-title-bar{width:3px;height:16px;border-radius:2px;background:linear-gradient(var(--amber), var(--cyan))}
+.card-subtitle{font-size:.78rem;color:var(--text3)}
+.controls-row{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end}
+.ctrl{flex:1; min-width:170px}
+.ctrl-label{display:block; margin-bottom:7px; color:var(--text3); text-transform:uppercase; letter-spacing:.7px; font-size:.72rem; font-weight:700}
+input[type=date], select, input[type=text]{
+  width:100%; padding:10px 13px; border-radius:var(--r); border:1px solid var(--border); outline:none;
+  background:var(--surface2); color:var(--text); font-family:var(--font); font-size:.88rem;
+}
+input[type=date]:focus, select:focus, input[type=text]:focus{border-color:var(--amber); box-shadow:0 0 0 3px rgba(240,160,0,.08)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:opacity(.4) sepia(1) saturate(3); cursor:pointer}
+.toggle-row{display:flex; border:1px solid var(--border); border-radius:var(--r); overflow:hidden}
+.toggle-btn{
+  flex:1; padding:10px 8px; border:none; background:var(--surface2); color:var(--text2);
+  font-family:var(--font); font-size:.82rem; font-weight:600; cursor:pointer;
+}
+.toggle-btn:not(:last-child){border-right:1px solid var(--border)}
+.toggle-btn.on{background:var(--amber); color:#000}
+.toggle-btn:hover:not(.on){background:var(--surface3); color:var(--text)}
+.section-label{
+  display:flex; align-items:center; gap:8px; margin-bottom:9px; color:var(--text3);
+  text-transform:uppercase; letter-spacing:1px; font-size:.68rem; font-weight:700;
+}
+.section-label::after{content:''; flex:1; height:1px; background:var(--border)}
+.chip-row{display:flex; flex-wrap:wrap; gap:7px}
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 14px; border-radius:999px; border:1px solid var(--border); background:var(--surface2);
+  color:var(--text2); font-size:.75rem; font-weight:600; cursor:pointer; user-select:none;
+}
+.chip:hover{border-color:var(--amber); color:var(--text)}
+.chip.on{background:rgba(240,160,0,.14); border-color:var(--amber); color:var(--amber)}
+.chip.fav{border-color:var(--amber);}
+.chip-del{margin-left:4px; color:var(--text3); font-weight:700}
+.chip-del:hover{color:var(--red)}
+.preset-save-row{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:12px}
+.preset-save-row input{flex:1; min-width:220px}
 
-.tkr-track { flex: 1; overflow: hidden; height: 100%; cursor: default; }
-.tkr-inner {
-  display: inline-flex; align-items: center;
-  animation: marquee var(--spd, 90s) linear infinite;
+.ms-wrap{position:relative}
+.ms-btn{
+  width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:var(--r); background:var(--surface2);
+  color:var(--text); font-family:var(--font); font-size:.88rem; cursor:pointer; text-align:left;
+  display:flex; align-items:center; justify-content:space-between;
 }
-.tkr-track:hover .tkr-inner { animation-play-state: paused; }
-@keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+.ms-btn:hover, .ms-btn.open{border-color:var(--amber)}
+.ms-badge{background:var(--amber); color:#000; border-radius:999px; padding:1px 9px; font-size:.7rem; font-weight:700}
+.ms-arrow{font-size:.6rem; color:var(--text3); transition:transform .2s}
+.ms-btn.open .ms-arrow{transform:rotate(180deg)}
+.ms-drop{
+  position:absolute; top:calc(100% + 7px); left:0; right:0; z-index:200; display:none; flex-direction:column;
+  max-height:340px; overflow:hidden; background:var(--surface); border:1px solid var(--border); border-radius:var(--r2);
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.ms-drop.show{display:flex}
+.ms-search-wrap{padding:10px 12px; border-bottom:1px solid var(--border)}
+.ms-search-wrap input{font-size:.84rem; padding:8px 11px}
+.ms-actions{display:flex; gap:8px; padding:8px 12px; border-bottom:1px solid var(--border)}
+.ms-act-btn{
+  flex:1; padding:6px; border:none; border-radius:7px; font-family:var(--font); font-size:.73rem; font-weight:600; cursor:pointer;
+}
+.ms-sel-all{background:var(--amber); color:#000}
+.ms-clr-all{background:var(--surface3); color:var(--text2)}
+.ms-list{overflow-y:auto; flex:1; padding:4px 0}
+.ms-row{
+  display:flex; align-items:center; gap:10px; padding:8px 13px; cursor:pointer;
+}
+.ms-row:hover{background:var(--surface2)}
+.ms-row.hidden{display:none}
+.ms-row input[type=checkbox]{accent-color:var(--amber); width:14px; height:14px; cursor:pointer}
+.ms-row-flag{font-size:1rem; flex:0 0 auto}
+.ms-row-code{min-width:40px; color:var(--cyan); font-weight:700; font-size:.82rem; font-family:var(--mono)}
+.ms-row-name{flex:1; color:var(--text2); font-size:.79rem}
+.fav-btn{margin-left:auto; color:var(--text3); font-size:.95rem; cursor:pointer; transition:transform .15s; padding:2px 4px}
+.fav-btn:hover{transform:scale(1.2)}
+.fav-btn.on{color:var(--amber)}
 
-.tkr-item {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 0 18px; height: 54px;
-  border-right: 1px solid rgba(255,255,255,0.04);
-  transition: background 0.15s;
+.sel-chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:14px}
+.sel-chip{
+  display:inline-flex; align-items:center; gap:5px; padding:4px 8px 4px 11px;
+  border-radius:999px; border:1px solid var(--border2); background:var(--surface2);
+  font-size:.76rem; font-weight:600; color:var(--text2);
 }
-.tkr-item:hover { background: var(--surface2); }
-.tkr-pair { font-size: 0.72rem; color: var(--text3); font-weight: 500; white-space: nowrap; }
-.tkr-flag { font-size: 0.95rem; }
-.tkr-rate { font-family: var(--mono); font-size: 0.8rem; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+.sel-chip-code{color:var(--cyan)}
+.sel-chip-x{cursor:pointer; padding:0 3px; color:var(--text3)}
+.sel-chip-x:hover{color:var(--red)}
 
-.tkr-ctrl {
-  flex-shrink: 0; padding: 0 14px;
-  border-left: 1px solid var(--border);
-  height: 100%; display: flex; align-items: center; gap: 8px;
-  background: var(--surface2);
+.btn{
+  display:inline-flex; align-items:center; gap:9px; padding:10px 22px; border-radius:var(--r);
+  border:none; cursor:pointer; font-family:var(--font); font-size:.87rem; font-weight:600; white-space:nowrap;
 }
-.tkr-ctrl-label { font-size: 0.6rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
-.tkr-ctrl input[type=range] {
-  width: 68px; accent-color: var(--amber); cursor: pointer;
+.btn-primary{background:linear-gradient(135deg, var(--amber2), #c07c00); color:#000}
+.btn-primary:hover{transform:translateY(-2px); box-shadow:0 8px 24px rgba(240,160,0,.28)}
+.btn-primary:disabled{opacity:.45; cursor:not-allowed; transform:none !important; box-shadow:none !important}
+.btn-secondary{background:var(--surface2); color:var(--text); border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--amber); color:var(--amber)}
+.btn-ghost, .btn-danger-ghost{
+  background:transparent; color:var(--text2); border:1px solid var(--border); font-size:.78rem; padding:7px 14px;
 }
+.btn-ghost:hover{border-color:var(--cyan); color:var(--cyan)}
+.btn-danger-ghost:hover{border-color:var(--red); color:var(--red)}
+.spin{width:15px;height:15px;border:2.5px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;display:none}
+.btn.loading .spin{display:inline-block}
+.btn.loading .btn-txt{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.prog-wrap{height:3px; background:var(--border); border-radius:999px; overflow:hidden; margin-top:14px; display:none}
+.prog{height:100%; width:0%; background:linear-gradient(90deg, var(--amber), var(--cyan)); transition:width .15s linear}
+.stats-row{display:flex; flex-wrap:wrap; gap:14px; margin-bottom:20px}
+.stat{
+  flex:1; min-width:110px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; text-align:center;
+}
+.stat-v{
+  font-family:var(--mono); font-size:1.25rem; font-weight:700; background:linear-gradient(135deg, var(--amber), var(--cyan));
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
+.stat-l{text-transform:uppercase; letter-spacing:.7px; font-size:.68rem; color:var(--text3); margin-top:4px}
+.tbl-wrap{background:var(--surface); border:1px solid var(--border); border-radius:var(--r2); overflow:hidden}
+.tbl-toolbar{
+  display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:13px 16px; background:var(--surface2); border-bottom:1px solid var(--border);
+}
+.tbl-title{font-size:.8rem; font-weight:700; color:var(--text2)}
+.tbl-search input{width:190px; padding:7px 12px; border-radius:8px; font-size:.82rem}
+.tbl-btns{display:flex; gap:7px; flex-wrap:wrap}
+.scroll-x{overflow-x:auto}
+table{width:100%; border-collapse:collapse}
+thead th{
+  background:var(--surface2); color:var(--text3); font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.8px;
+  padding:11px 14px; text-align:left; cursor:pointer; user-select:none; white-space:nowrap;
+}
+thead th:hover, thead th.srt{color:var(--amber)}
+thead th .arr{font-size:.65rem; margin-left:4px; opacity:.5}
+thead th.srt .arr{opacity:1}
+thead th.noclick{cursor:default}
+tbody td{padding:10px 14px; border-top:1px solid rgba(29,42,58,.7); font-size:.86rem}
+tbody tr:hover{background:rgba(240,160,0,.025)}
+tbody tr.fav-row{background:rgba(240,160,0,.02)}
+.td-n{font-family:var(--mono); font-size:.75rem; color:var(--text3)}
+.td-flag{font-size:1.1rem}
+.td-code{font-family:var(--mono); font-size:.82rem; font-weight:700; color:var(--cyan)}
+.td-name{color:var(--text2); font-size:.82rem}
+.td-rate{font-family:var(--mono); font-weight:700; cursor:pointer}
+.td-rate:hover{color:var(--amber)}
+.td-inv,.td-spread,.td-date{font-family:var(--mono); color:var(--text2); font-size:.78rem}
+.td-status{font-family:var(--mono); font-weight:700; font-size:.74rem}
+.ok{color:var(--green)} .bad{color:var(--red)}
+.td-fav{cursor:pointer; user-select:none; transition:transform .15s; display:inline-block}
+.td-fav:hover{transform:scale(1.3)}
 
-/* ============================================================  HEADER  */
-.hdr {
-  position: relative; overflow: hidden;
-  background: linear-gradient(180deg, var(--surface2) 0%, var(--bg) 100%);
-  padding: 44px 24px 30px;
-  border-bottom: 1px solid var(--border);
+textarea{
+  width:100%; min-height:120px; resize:vertical; padding:13px 14px; border-radius:var(--r);
+  border:1px solid var(--border); background:var(--surface2); color:var(--text); outline:none;
+  font-family:var(--mono); font-size:.84rem; line-height:1.6;
 }
-.hdr::after {
-  content: ''; position: absolute;
-  bottom: -1px; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--amber), var(--cyan), transparent);
-  opacity: 0.3;
+textarea:focus{border-color:var(--amber); box-shadow:0 0 0 3px rgba(240,160,0,.08)}
+textarea::placeholder{color:var(--text3)}
+.paste-hint{
+  margin-top:9px; padding:9px 12px; border-radius:8px; background:rgba(0,212,200,.08); border:1px solid rgba(0,212,200,.12);
+  font-size:.76rem; color:var(--text2); display:flex; gap:7px; align-items:flex-start;
 }
-.hdr-inner { max-width: 1120px; margin: 0 auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-.hdr-eyebrow { font-size: 0.68rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--amber); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-.hdr-eyebrow::before { content: ''; display: block; width: 20px; height: 1px; background: var(--amber); }
-.hdr-title {
-  font-size: 2.2rem; font-weight: 700; letter-spacing: -1px;
-  background: linear-gradient(135deg, var(--amber-l) 0%, var(--amber) 35%, var(--cyan) 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  line-height: 1.1;
+.cors-notice{
+  display:none; margin-bottom:16px; padding:14px 16px; border-radius:var(--r);
+  background:rgba(240,64,96,.08); border:1px solid rgba(240,64,96,.2); color:var(--text2); font-size:.82rem;
 }
-.hdr-sub { color: var(--text2); font-size: 0.87rem; margin-top: 8px; font-weight: 400; }
-.hdr-pills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.hdr-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 12px; border-radius: 99px;
-  border: 1px solid var(--border2); background: var(--surface);
-  font-size: 0.73rem; color: var(--text2); font-weight: 500;
+.cors-notice strong{color:var(--red)}
+.toast-c{
+  position:fixed; top:64px; right:18px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none;
 }
-.hdr-pill-dot { width: 6px; height: 6px; border-radius: 50%; }
-
-/* ============================================================  LAYOUT  */
-.container { max-width: 1120px; margin: 0 auto; padding: 28px 20px 80px; }
-
-/* ============================================================  CARD  */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 22px;
-  margin-bottom: 18px;
-  position: relative;
+.toast{
+  padding:10px 16px; border-radius:var(--r); font-size:.82rem; font-weight:600; color:#fff; display:flex; align-items:center; gap:9px;
+  box-shadow:0 10px 40px rgba(0,0,0,.5); animation:tin .25s ease; max-width:320px; pointer-events:auto;
 }
-.card::before {
-  content: ''; position: absolute;
-  top: 0; left: 24px; right: 24px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-}
-.card-hd {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 10px; margin-bottom: 18px;
-}
-.card-title {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 0.73rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 1.2px;
-  color: var(--amber);
-}
-.card-title-bar { width: 3px; height: 16px; background: linear-gradient(var(--amber), var(--cyan)); border-radius: 2px; }
-.card-subtitle { font-size: 0.78rem; color: var(--text3); }
-
-/* ============================================================  CONTROLS  */
-.controls-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
-.ctrl { flex: 1; min-width: 160px; }
-.ctrl-label {
-  display: block; font-size: 0.72rem; font-weight: 700;
-  color: var(--text3); margin-bottom: 7px;
-  text-transform: uppercase; letter-spacing: 0.7px;
-}
-
-input[type=date], select {
-  width: 100%; padding: 10px 13px;
-  border-radius: var(--r); border: 1px solid var(--border);
-  background: var(--surface2); color: var(--text);
-  font-family: var(--font); font-size: 0.88rem; outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  appearance: none; -webkit-appearance: none;
-}
-input[type=date]:focus, select:focus { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
-input[type=date]::-webkit-calendar-picker-indicator { filter: opacity(0.4) sepia(1) saturate(3); cursor: pointer; }
-
-/* Rate toggle */
-.toggle-row {
-  display: flex; border: 1px solid var(--border);
-  border-radius: var(--r); overflow: hidden;
-}
-.toggle-btn {
-  flex: 1; padding: 10px 8px; border: none;
-  background: var(--surface2); color: var(--text2);
-  font-family: var(--font); font-size: 0.82rem; font-weight: 600;
-  cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-.toggle-btn:not(:last-child) { border-right: 1px solid var(--border); }
-.toggle-btn.on { background: var(--amber); color: #000; }
-.toggle-btn:not(.on):hover { background: var(--surface3); color: var(--text); }
-
-/* ============================================================  MULTI-SELECT  */
-.preset-section { margin-bottom: 16px; }
-.section-label {
-  font-size: 0.68rem; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--text3);
-  margin-bottom: 9px; display: flex; align-items: center; gap: 8px;
-}
-.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-.chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
-.chip {
-  padding: 5px 14px; border-radius: 99px;
-  border: 1px solid var(--border); background: var(--surface2);
-  color: var(--text2); font-size: 0.75rem; font-weight: 600;
-  cursor: pointer; transition: all 0.15s; user-select: none;
-}
-.chip:hover { border-color: var(--amber); color: var(--text); }
-.chip.on { background: var(--amber-bg2); border-color: var(--amber); color: var(--amber); }
-.chip.fav-chip { border-color: var(--amber-d); color: var(--amber); }
-.chip.fav-chip.on { background: var(--amber-bg2); }
-
-/* Dropdown */
-.ms-wrap { position: relative; }
-.ms-btn {
-  width: 100%; padding: 10px 14px;
-  border: 1px solid var(--border); border-radius: var(--r);
-  background: var(--surface2); color: var(--text);
-  font-family: var(--font); font-size: 0.88rem;
-  cursor: pointer; text-align: left; display: flex;
-  align-items: center; justify-content: space-between;
-  transition: border-color 0.2s; user-select: none;
-}
-.ms-btn:hover, .ms-btn.open { border-color: var(--amber); }
-.ms-badge {
-  background: var(--amber); color: #000;
-  border-radius: 99px; padding: 1px 9px;
-  font-size: 0.7rem; font-weight: 700;
-}
-.ms-arrow { font-size: 0.6rem; color: var(--text3); transition: transform 0.2s; }
-.ms-btn.open .ms-arrow { transform: rotate(180deg); }
-
-.ms-drop {
-  position: absolute; top: calc(100% + 7px); left: 0; right: 0;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-lg); z-index: 200;
-  max-height: 340px; display: none; flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-}
-.ms-drop.show { display: flex; }
-.ms-search-wrap { padding: 10px 12px; border-bottom: 1px solid var(--border); }
-.ms-search-wrap input {
-  width: 100%; padding: 8px 11px;
-  border-radius: 7px; border: 1px solid var(--border);
-  background: var(--surface2); color: var(--text);
-  font-family: var(--font); font-size: 0.84rem; outline: none;
-}
-.ms-search-wrap input:focus { border-color: var(--amber); }
-.ms-actions { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
-.ms-act-btn {
-  flex: 1; padding: 5px; border-radius: 7px; border: none;
-  font-family: var(--font); font-size: 0.73rem; font-weight: 600; cursor: pointer;
-  transition: opacity 0.15s;
-}
-.ms-act-btn:hover { opacity: 0.85; }
-.ms-sel-all { background: var(--amber); color: #000; }
-.ms-clr-all { background: var(--surface3); color: var(--text2); }
-
-.ms-list { overflow-y: auto; padding: 4px 0; flex: 1; }
-.ms-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 13px; cursor: pointer; transition: background 0.1s;
-}
-.ms-row:hover { background: var(--surface2); }
-.ms-row.hidden { display: none; }
-.ms-row input[type=checkbox] { accent-color: var(--amber); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
-.ms-row-flag { font-size: 1rem; flex-shrink: 0; }
-.ms-row-code { font-weight: 700; color: var(--cyan); font-size: 0.82rem; min-width: 38px; }
-.ms-row-name { color: var(--text2); font-size: 0.79rem; flex: 1; }
-.fav-btn { margin-left: auto; color: var(--text3); cursor: pointer; font-size: 0.95rem; transition: all 0.15s; padding: 2px 4px; flex-shrink: 0; }
-.fav-btn:hover { transform: scale(1.2); }
-.fav-btn.on { color: var(--amber); }
-
-/* Selected chips */
-.sel-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; min-height: 0; }
-.sel-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 8px 4px 11px; border-radius: 99px;
-  border: 1px solid var(--border2); background: var(--surface2);
-  font-size: 0.76rem; font-weight: 600; color: var(--text2);
-}
-.sel-chip-code { color: var(--cyan); }
-.sel-chip-x { color: var(--text3); cursor: pointer; padding: 0 3px; transition: color 0.15s; font-size: 0.9rem; line-height: 1; }
-.sel-chip-x:hover { color: var(--red); }
-
-/* ============================================================  BUTTONS  */
-.btn {
-  display: inline-flex; align-items: center; gap: 9px;
-  padding: 10px 22px; border-radius: var(--r);
-  border: none; cursor: pointer;
-  font-family: var(--font); font-size: 0.87rem; font-weight: 600;
-  transition: all 0.15s; white-space: nowrap;
-}
-.btn-primary { background: linear-gradient(135deg, var(--amber-l), var(--amber-d)); color: #000; }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(240,160,0,0.35); }
-.btn-primary:active { transform: translateY(0); }
-.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
-.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { border-color: var(--amber); color: var(--amber); }
-.btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); font-size: 0.78rem; padding: 7px 14px; }
-.btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); }
-.btn-danger-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); font-size: 0.78rem; padding: 7px 14px; }
-.btn-danger-ghost:hover { border-color: var(--red); color: var(--red); }
-
-.spin { width: 15px; height: 15px; border: 2.5px solid rgba(0,0,0,0.3); border-top-color: #000; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; }
-.btn.loading .spin { display: inline-block; }
-.btn.loading .btn-txt { display: none; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ============================================================  PROGRESS  */
-.prog-wrap { height: 3px; background: var(--border); border-radius: 99px; margin-top: 14px; overflow: hidden; display: none; }
-.prog { height: 100%; background: linear-gradient(90deg, var(--amber), var(--cyan)); border-radius: 99px; transition: width 0.15s linear; width: 0%; }
-
-/* ============================================================  STATS  */
-.stats-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
-.stat {
-  flex: 1; min-width: 110px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 14px 16px; text-align: center;
-}
-.stat-v { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; background: linear-gradient(135deg, var(--amber), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.stat-l { font-size: 0.68rem; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.7px; }
-
-/* ============================================================  TABLE  */
-.tbl-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
-.tbl-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 16px; border-bottom: 1px solid var(--border);
-  gap: 10px; flex-wrap: wrap;
-  background: var(--surface2);
-}
-.tbl-title { font-size: 0.8rem; font-weight: 700; color: var(--text2); }
-.tbl-search input {
-  padding: 7px 12px; border-radius: 8px;
-  border: 1px solid var(--border); background: var(--surface);
-  color: var(--text); font-family: var(--font); font-size: 0.82rem;
-  outline: none; width: 190px; transition: border-color 0.2s;
-}
-.tbl-search input:focus { border-color: var(--amber); }
-.tbl-btns { display: flex; gap: 7px; flex-wrap: wrap; }
-
-.scroll-x { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-thead th {
-  background: var(--surface2); color: var(--text3);
-  font-size: 0.68rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.8px;
-  padding: 11px 14px; text-align: left;
-  cursor: pointer; user-select: none; white-space: nowrap;
-  transition: color 0.15s;
-}
-thead th:hover { color: var(--amber); }
-thead th.srt { color: var(--amber); }
-thead th .arr { font-size: 0.65rem; margin-left: 4px; opacity: 0.5; }
-thead th.srt .arr { opacity: 1; }
-thead th:first-child { cursor: default; }
-
-tbody td { padding: 10px 14px; border-top: 1px solid rgba(29,42,58,0.7); font-size: 0.86rem; }
-tbody tr { transition: background 0.1s; }
-tbody tr:hover { background: rgba(240,160,0,0.025); }
-tbody tr.fav-row { background: rgba(240,160,0,0.02); }
-
-.td-n { font-family: var(--mono); font-size: 0.75rem; color: var(--text3); }
-.td-flag { font-size: 1.1rem; }
-.td-code { font-weight: 700; color: var(--cyan); font-family: var(--mono); font-size: 0.82rem; }
-.td-name { color: var(--text2); font-size: 0.82rem; }
-.td-rate { font-family: var(--mono); font-weight: 700; cursor: pointer; transition: color 0.15s; }
-.td-rate:hover { color: var(--amber); }
-.td-inv { font-family: var(--mono); color: var(--text2); font-size: 0.8rem; }
-.td-spread { font-family: var(--mono); color: var(--text3); font-size: 0.75rem; }
-.td-date { font-family: var(--mono); color: var(--text3); font-size: 0.73rem; }
-.td-fav { cursor: pointer; user-select: none; transition: transform 0.15s; display: inline-block; }
-.td-fav:hover { transform: scale(1.3); }
-
-/* ============================================================  PASTE SECTION  */
-textarea {
-  width: 100%; min-height: 120px; resize: vertical;
-  padding: 13px 14px; border-radius: var(--r);
-  border: 1px solid var(--border); background: var(--surface2);
-  color: var(--text); font-family: var(--mono); font-size: 0.84rem;
-  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-  line-height: 1.6;
-}
-textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
-textarea::placeholder { color: var(--text3); }
-
-.paste-hint {
-  margin-top: 9px; font-size: 0.76rem; color: var(--text3);
-  display: flex; align-items: flex-start; gap: 7px;
-  padding: 9px 12px; border-radius: 8px;
-  background: var(--cyan-bg); border: 1px solid rgba(0,212,200,0.12);
-}
-
-/* ============================================================  CORS NOTICE  */
-.cors-notice {
-  background: var(--red-bg); border: 1px solid rgba(240,64,96,0.2);
-  border-radius: var(--r); padding: 14px 16px; margin-bottom: 16px;
-  font-size: 0.82rem; color: var(--text2); display: none;
-}
-.cors-notice strong { color: var(--red); }
-
-/* ============================================================  TOAST  */
-.toast-c {
-  position: fixed; top: 64px; right: 18px; z-index: 9999;
-  display: flex; flex-direction: column; gap: 8px;
-  pointer-events: none;
-}
-.toast {
-  padding: 10px 16px; border-radius: var(--r);
-  font-size: 0.82rem; font-weight: 600; color: #fff;
-  display: flex; align-items: center; gap: 9px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  animation: tin 0.25s ease; max-width: 300px;
-  pointer-events: all;
-}
-@keyframes tin { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
-.toast.ok  { background: linear-gradient(135deg, #0a7f5a, var(--green)); }
-.toast.err { background: linear-gradient(135deg, #a02030, var(--red)); }
-.toast.inf { background: linear-gradient(135deg, #0a5080, #0ea5e9); }
-
-/* ============================================================  FOOTER  */
-footer {
-  text-align: center; padding: 28px 20px;
-  color: var(--text3); font-size: 0.76rem;
-  border-top: 1px solid var(--border);
-}
-footer a { color: var(--amber); text-decoration: none; }
-footer a:hover { text-decoration: underline; }
-
-/* ============================================================  DIVIDER  */
-.divider {
-  height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent);
-  margin: 28px 0;
-}
-
-/* ============================================================  EMPTY STATE  */
-.empty-state {
-  text-align: center; padding: 48px 24px;
-  color: var(--text3); font-size: 0.88rem;
-}
-.empty-icon { font-size: 2rem; margin-bottom: 10px; opacity: 0.5; }
-
-/* ============================================================  RESPONSIVE  */
-@media (max-width: 680px) {
-  .hdr-title { font-size: 1.6rem; }
-  .hdr-pills { display: none; }
-  .controls-row > * { min-width: 100%; }
-  .tbl-toolbar { flex-direction: column; align-items: stretch; }
-  .tbl-search input { width: 100%; }
-  .stats-row { gap: 10px; }
-  .stat { min-width: 80px; }
+@keyframes tin{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+.toast.ok{background:linear-gradient(135deg, #0a7f5a, var(--green))}
+.toast.err{background:linear-gradient(135deg, #a02030, var(--red))}
+.toast.inf{background:linear-gradient(135deg, #0a5080, #0ea5e9)}
+.divider{height:1px; background:linear-gradient(90deg, transparent, var(--border), transparent); margin:28px 0}
+footer{padding:28px 20px; text-align:center; color:var(--text3); font-size:.76rem; border-top:1px solid var(--border)}
+footer a{color:var(--amber); text-decoration:none}
+footer a:hover{text-decoration:underline}
+.empty-state{padding:48px 24px; text-align:center; color:var(--text3); font-size:.88rem}
+.empty-icon{font-size:2rem; opacity:.5; margin-bottom:10px}
+@media (max-width:680px){
+  .hdr-title{font-size:1.6rem}
+  .hdr-pills{display:none}
+  .controls-row > *{min-width:100%}
+  .tbl-toolbar{flex-direction:column; align-items:stretch}
+  .tbl-search input{width:100%}
+  .stats-row{gap:10px}
+  .stat{min-width:80px}
 }
 </style>
 </head>
 <body>
-
-<!-- ════════════════════ TICKER ════════════════════ -->
 <div id="ticker">
-  <div class="tkr-badge">
-    <span class="live-dot"></span>
-    <span>FX</span>
-  </div>
-  <div class="tkr-track">
-    <div class="tkr-inner" id="tkrInner">
-      <span class="tkr-item"><span class="tkr-pair">Loading rates...</span></span>
-    </div>
-  </div>
+  <div class="tkr-badge"><span class="live-dot"></span><span>FX</span></div>
+  <div class="tkr-track"><div class="tkr-inner" id="tkrInner"></div></div>
   <div class="tkr-ctrl">
     <span class="tkr-ctrl-label">Speed</span>
     <input type="range" id="spdSlider" min="1" max="100" value="50" oninput="setTickerSpeed(this.value)">
   </div>
 </div>
 
-<!-- ════════════════════ HEADER ════════════════════ -->
 <header class="hdr">
   <div class="hdr-inner">
     <div>
       <div class="hdr-eyebrow">Exchange Rate Dashboard</div>
       <h1 class="hdr-title">FX Rate Terminal</h1>
-      <p class="hdr-sub">Live & historical rates for 58 currencies · Powered by OANDA Public API</p>
+      <p class="hdr-sub">Live & historical rates for all supported currencies · base-aware ticker · custom presets</p>
     </div>
     <div class="hdr-pills">
-      <div class="hdr-pill">
-        <span class="hdr-pill-dot" style="background:var(--amber)"></span>
-        OANDA Public API
-      </div>
-      <div class="hdr-pill" id="lastUpdated">
-        <span class="hdr-pill-dot" style="background:var(--text3)"></span>
-        Not fetched yet
-      </div>
-      <div class="hdr-pill" id="dateDisplay">
-        <span class="hdr-pill-dot" style="background:var(--cyan)"></span>
-        <span id="dateLabel">Today</span>
-      </div>
+      <div class="hdr-pill"><span class="hdr-pill-dot" style="background:var(--amber)"></span>OANDA Public API</div>
+      <div class="hdr-pill" id="lastUpdated"><span class="hdr-pill-dot" style="background:var(--text3)"></span>Not fetched yet</div>
+      <div class="hdr-pill"><span class="hdr-pill-dot" style="background:var(--cyan)"></span><span id="dateLabel">Today</span></div>
     </div>
   </div>
 </header>
 
-<!-- ════════════════════ MAIN ════════════════════ -->
 <main class="container">
-
-  <!-- CORS NOTICE (shown on error) -->
   <div class="cors-notice" id="corsNotice">
-    <strong>⚠ API Access Issue:</strong> The OANDA API may be blocked by CORS when running on GitHub Pages.
-    If rates aren't loading, try opening this page locally (double-click the HTML file), or use a browser extension like "CORS Unblock".
-    The API URL is: <code>https://fxds-public-exchange-rates-api.oanda.com/cc-api/currencies</code>
+    <strong>⚠ API Access Issue:</strong> The OANDA API may be blocked by CORS in some hosting setups.
+    If rates are not loading, try opening this page locally or use a browser/CORS solution.
   </div>
 
-  <!-- ─────────── QUERY SETTINGS ─────────── -->
   <div class="card">
     <div class="card-hd">
       <div class="card-title"><span class="card-title-bar"></span>Query Settings</div>
-      <div class="card-subtitle" id="settingsSummary">USD base · Avg Ask · Today</div>
+      <div class="card-subtitle" id="settingsSummary">USD base · Avg Bid · Today</div>
     </div>
     <div class="controls-row">
       <div class="ctrl">
@@ -548,47 +331,41 @@ footer a:hover { text-decoration: underline; }
       </div>
       <div class="ctrl">
         <span class="ctrl-label">Base Currency</span>
-        <select id="baseSelect" onchange="onBaseChange()">
-          <option value="USD">🇺🇸 USD – US Dollar</option>
-          <option value="EUR">🇪🇺 EUR – Euro</option>
-          <option value="GBP">🇬🇧 GBP – British Pound</option>
-          <option value="JPY">🇯🇵 JPY – Japanese Yen</option>
-          <option value="CHF">🇨🇭 CHF – Swiss Franc</option>
-          <option value="CAD">🇨🇦 CAD – Canadian Dollar</option>
-          <option value="AUD">🇦🇺 AUD – Australian Dollar</option>
-          <option value="CNY">🇨🇳 CNY – Chinese Yuan</option>
-          <option value="INR">🇮🇳 INR – Indian Rupee</option>
-          <option value="SGD">🇸🇬 SGD – Singapore Dollar</option>
-        </select>
+        <select id="baseSelect" onchange="onBaseChange()"></select>
       </div>
     </div>
   </div>
 
-  <!-- ─────────── CURRENCY SELECTOR ─────────── -->
   <div class="card">
     <div class="card-hd">
       <div class="card-title"><span class="card-title-bar"></span>Currency Selection</div>
     </div>
 
-    <!-- Favorites bar (shown when favorites exist) -->
     <div id="favSection" style="display:none; margin-bottom:16px">
-      <div class="section-label">⭐ Favorites</div>
+      <div class="section-label">Favorites</div>
       <div class="chip-row" id="favChips"></div>
     </div>
 
-    <!-- Presets -->
-    <div class="preset-section">
+    <div class="preset-section" style="margin-bottom:14px">
       <div class="section-label">Quick Presets</div>
       <div class="chip-row" id="presetChips"></div>
     </div>
 
-    <!-- Dropdown -->
+    <div class="preset-section" style="margin-bottom:14px">
+      <div class="section-label">Your Presets</div>
+      <div class="preset-save-row">
+        <input id="customPresetName" type="text" placeholder="Preset name, e.g. My Watchlist">
+        <button class="btn btn-secondary" onclick="saveCustomPreset()">Save Current Selection</button>
+      </div>
+      <div class="chip-row" id="customPresetChips"></div>
+    </div>
+
     <div style="margin-bottom:14px">
-      <span class="ctrl-label" style="display:block;margin-bottom:7px">Search &amp; Select</span>
+      <span class="ctrl-label" style="display:block; margin-bottom:7px">Search & Select</span>
       <div class="ms-wrap" id="msWrap">
         <button class="ms-btn" id="msBtn" onclick="toggleMs()">
           <span id="msBtnLabel">Click to select currencies...</span>
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex; align-items:center; gap:8px">
             <span class="ms-badge" id="msBadge" style="display:none">0</span>
             <span class="ms-arrow">▼</span>
           </div>
@@ -606,33 +383,30 @@ footer a:hover { text-decoration: underline; }
       </div>
     </div>
 
-    <!-- Selected chips display -->
     <div class="sel-chips" id="selChips"></div>
 
-    <!-- Fetch button row -->
-    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center">
+    <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; align-items:center">
       <button class="btn btn-primary" id="fetchBtn" onclick="fetchRates()" disabled>
-        <div class="spin"></div>
-        <span class="btn-txt">⚡ Fetch Rates</span>
+        <div class="spin"></div><span class="btn-txt">⚡ Fetch Rates</span>
       </button>
       <button class="btn btn-secondary" onclick="clearAll()">✕ Clear Selection</button>
-      <span id="selCount" style="font-size:0.78rem;color:var(--text3);margin-left:4px"></span>
+      <span id="selCount" style="font-size:.78rem; color:var(--text3); margin-left:4px"></span>
     </div>
 
     <div class="prog-wrap" id="mainProg"><div class="prog" id="mainProgBar"></div></div>
   </div>
 
-  <!-- ─────────── RESULTS ─────────── -->
   <div id="resultsSection" style="display:none">
     <div class="stats-row" id="statsRow"></div>
     <div class="tbl-wrap">
       <div class="tbl-toolbar">
         <span class="tbl-title" id="tblTitle">Results</span>
-        <div class="tbl-search"><input type="text" placeholder="🔍 Filter..." id="tblFilter" oninput="filterTbl(this.value)"></div>
+        <div class="tbl-search"><input type="text" id="tblFilter" placeholder="🔍 Filter..." oninput="filterTbl(this.value)"></div>
         <div class="tbl-btns">
-          <button class="btn btn-ghost" onclick="copyRates()">📊 Rates Col</button>
-          <button class="btn btn-ghost" onclick="copyTbl()">📋 Copy Table</button>
-          <button class="btn btn-ghost" onclick="dlCSV()">⬇ CSV</button>
+          <button class="btn btn-ghost" id="copyRateBtn" onclick="copyMainColumn('rate')">Copy 1 USD = ?</button>
+          <button class="btn btn-ghost" id="copyInvBtn" onclick="copyMainColumn('inv')">Copy 1 = ? USD</button>
+          <button class="btn btn-ghost" onclick="copyMainTable()">📋 Copy Table</button>
+          <button class="btn btn-ghost" onclick="downloadMainCSV()">⬇ CSV</button>
         </div>
       </div>
       <div class="scroll-x">
@@ -646,26 +420,21 @@ footer a:hover { text-decoration: underline; }
 
   <div class="divider"></div>
 
-  <!-- ─────────── EXCEL PASTE ─────────── -->
   <div class="card">
     <div class="card-hd">
       <div class="card-title"><span class="card-title-bar"></span>Excel Paste Mode</div>
-      <div class="card-subtitle">Paste a currency column directly from Excel or any spreadsheet</div>
+      <div class="card-subtitle">Paste one or more currency codes from Excel or any spreadsheet</div>
     </div>
 
-   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:0.82rem;color:var(--text2)">
-    <div id="dedupToggle" onclick="toggleDedup()"
-      style="width:38px;height:20px;border-radius:99px;background:var(--surface3);border:1px solid var(--border2);
-             position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0">
-      <div id="dedupKnob"
-        style="width:14px;height:14px;border-radius:50%;background:var(--text3);
-               position:absolute;top:2px;left:2px;transition:all 0.2s"></div>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; font-size:.82rem; color:var(--text2)">
+        <div id="dedupToggle" onclick="toggleDedup()" style="width:38px;height:20px;border-radius:999px;background:var(--surface3);border:1px solid var(--border2);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0">
+          <div id="dedupKnob" style="width:14px;height:14px;border-radius:50%;background:var(--text3);position:absolute;top:2px;left:2px;transition:all .2s"></div>
+        </div>
+        Unique currencies only
+        <span style="font-size:.7rem; color:var(--text3); font-weight:400">(off = show every row as pasted)</span>
+      </label>
     </div>
-    Unique currencies only
-    <span style="font-size:0.7rem;color:var(--text3);font-weight:400">(off = show every row as pasted)</span>
-  </label>
-</div>
 
     <textarea id="pasteArea" placeholder="Paste here — one currency per row, or an Excel column:
 EUR
@@ -674,47 +443,45 @@ JPY
 INR
 AED
 
-Works with extra columns too (e.g. from Excel: EUR  100  Region A)
-Currency codes are automatically extracted from each row."></textarea>
+Works with extra columns too. Currency codes are extracted automatically."></textarea>
 
     <div class="paste-hint">
       <span>💡</span>
-      <span>Supports <strong>any Excel paste</strong> — extra columns, numbers, and text are stripped. Recognised currencies: 3-letter ISO codes (EUR, USD, GBP...). Results use the date &amp; rate type set above.</span>
+      <span>Supports <strong>any Excel paste</strong> — extra columns, numbers, and text are stripped. Recognized currencies are 3-letter ISO codes.</span>
     </div>
 
-    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+    <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap">
       <button class="btn btn-primary" id="pasteBtn" onclick="runPaste()">
-        <div class="spin"></div>
-        <span class="btn-txt">⚡ Fetch Pasted Rates</span>
+        <div class="spin"></div><span class="btn-txt">⚡ Fetch Pasted Rates</span>
       </button>
       <button class="btn btn-danger-ghost" onclick="clearPaste()">🗑 Clear</button>
     </div>
     <div class="prog-wrap" id="pasteProg"><div class="prog" id="pasteProgBar"></div></div>
   </div>
 
-  <!-- Paste results table -->
   <div id="pasteSection" style="display:none">
     <div class="tbl-wrap">
       <div class="tbl-toolbar">
         <span class="tbl-title" id="pasteTblTitle">Paste Results</span>
         <div class="tbl-btns">
-          <button class="btn btn-ghost" onclick="copyPasteRates()">📊 Rates Col</button>
-          <button class="btn btn-ghost" onclick="copyPasteTbl()">📋 Copy Table</button>
-          <button class="btn btn-ghost" onclick="dlPasteCSV()">⬇ CSV</button>
+          <button class="btn btn-ghost" onclick="copyPasteColumn('rate')">Copy Rate</button>
+          <button class="btn btn-ghost" onclick="copyPasteColumn('inv')">Copy Inverse</button>
+          <button class="btn btn-ghost" onclick="copyPasteTable()">📋 Copy Table</button>
+          <button class="btn btn-ghost" onclick="downloadPasteCSV()">⬇ CSV</button>
         </div>
       </div>
       <div class="scroll-x">
         <table>
           <thead>
             <tr>
-              <th style="cursor:default"> </th>
-              <th style="cursor:default">Code</th>
-              <th style="cursor:default">Currency</th>
-              <th style="cursor:default" id="pasteRateHdr">Rate (1 USD = ?)</th>
-              <th style="cursor:default">Inverse (1 = ? USD)</th>
-              <th style="cursor:default">Bid</th>
-              <th style="cursor:default">Ask</th>
-              <th style="cursor:default">Status</th>
+              <th class="noclick"> </th>
+              <th class="noclick">Code</th>
+              <th class="noclick">Currency</th>
+              <th class="noclick" id="pasteRateHdr">Rate (1 USD = ?)</th>
+              <th class="noclick" id="pasteInvHdr">Inverse (1 = ? USD)</th>
+              <th class="noclick">Bid</th>
+              <th class="noclick">Ask</th>
+              <th class="noclick">Status</th>
             </tr>
           </thead>
           <tbody id="pasteTblBody"></tbody>
@@ -722,29 +489,22 @@ Currency codes are automatically extracted from each row."></textarea>
       </div>
     </div>
   </div>
-
 </main>
 
-<!-- FOOTER -->
 <footer>
-  <p>Data sourced from <a href="https://www.oanda.com" target="_blank" rel="noopener">OANDA</a> via the public exchange rates API.
-  Rates are indicative and for reference only. Not financial advice.</p>
-  <p style="margin-top:6px;color:var(--text3)">FX Rate Terminal · Open source · <a href="https://github.com/shawkeen" target="_blank" rel="noopener">GitHub</a></p>
+  <p>Data sourced from <a href="https://www.oanda.com" target="_blank" rel="noopener">OANDA</a> via the public exchange rates API. Indicative only.</p>
+  <p style="margin-top:6px">FX Rate Terminal · Open source · <a href="https://github.com/shawkeen" target="_blank" rel="noopener">GitHub</a></p>
 </footer>
 
-<!-- TOAST CONTAINER -->
 <div class="toast-c" id="toastC"></div>
 
-<!-- ════════════════════════════════════════════════════════
-     JAVASCRIPT
-     ════════════════════════════════════════════════════════ -->
 <script>
 'use strict';
 
-/* ─── DATA ─── */
 const API = 'https://fxds-public-exchange-rates-api.oanda.com/cc-api/currencies';
 
 const CUR = {
+  USD:"US Dollar",
   AED:"UAE Dirham",ARS:"Argentine Peso",AUD:"Australian Dollar",
   BDT:"Bangladeshi Taka",BGN:"Bulgarian Lev",BHD:"Bahraini Dinar",
   BRL:"Brazilian Real",CAD:"Canadian Dollar",CHF:"Swiss Franc",
@@ -768,6 +528,7 @@ const CUR = {
 };
 
 const FLAGS = {
+  USD:"🇺🇸",
   AED:"🇦🇪",ARS:"🇦🇷",AUD:"🇦🇺",BDT:"🇧🇩",BGN:"🇧🇬",BHD:"🇧🇭",BRL:"🇧🇷",
   CAD:"🇨🇦",CHF:"🇨🇭",CLP:"🇨🇱",CNY:"🇨🇳",COP:"🇨🇴",CZK:"🇨🇿",DKK:"🇩🇰",
   DZD:"🇩🇿",EGP:"🇪🇬",EUR:"🇪🇺",GBP:"🇬🇧",GEL:"🇬🇪",GHS:"🇬🇭",HKD:"🇭🇰",
@@ -776,148 +537,306 @@ const FLAGS = {
   MXN:"🇲🇽",MYR:"🇲🇾",NGN:"🇳🇬",NOK:"🇳🇴",NZD:"🇳🇿",OMR:"🇴🇲",PEN:"🇵🇪",
   PHP:"🇵🇭",PKR:"🇵🇰",PLN:"🇵🇱",QAR:"🇶🇦",RON:"🇷🇴",RUB:"🇷🇺",SAR:"🇸🇦",
   SEK:"🇸🇪",SGD:"🇸🇬",THB:"🇹🇭",TRY:"🇹🇷",TWD:"🇹🇼",TZS:"🇹🇿",UAH:"🇺🇦",
-  USD:"🇺🇸",VND:"🇻🇳",ZAR:"🇿🇦"
+  VND:"🇻🇳",ZAR:"🇿🇦"
 };
 
-const PRESETS = {
-  "G10":         ["EUR","GBP","JPY","CHF","CAD","AUD","NZD","NOK","SEK","DKK"],
-  "BRICS+":      ["BRL","RUB","INR","CNY","ZAR","EGP","AED","SAR"],
-  "Asia Pacific":["JPY","CNY","HKD","SGD","INR","KRW","TWD","THB","MYR","IDR","PHP","AUD","NZD","BDT","LKR","PKR"],
-  "Americas":    ["CAD","MXN","BRL","ARS","COP","CLP","PEN"],
-  "Middle East": ["AED","SAR","QAR","KWD","BHD","OMR","JOD","EGP","ILS"],
-  "Africa":      ["ZAR","NGN","KES","GHS","DZD","TZS","MAD","EGP"],
-  "Eastern EU":  ["PLN","CZK","HUF","RON","BGN","UAH","RUB","GEL","KZT","HRK"],
-  "All":         Object.keys(CUR).sort(),
+const ALL_CODES = Object.keys(CUR).sort((a,b) => a.localeCompare(b));
+
+const BUILTIN_PRESETS = {
+  "G10": ["EUR","GBP","JPY","CHF","CAD","AUD","NZD","NOK","SEK","DKK","USD"],
+  "BRICS+": ["BRL","RUB","INR","CNY","ZAR","EGP","AED","SAR"],
+  "Asia Pacific": ["JPY","CNY","HKD","SGD","INR","KRW","TWD","THB","MYR","IDR","PHP","AUD","NZD","BDT","LKR","PKR"],
+  "Americas": ["USD","CAD","MXN","BRL","ARS","COP","CLP","PEN"],
+  "Middle East": ["USD","AED","SAR","QAR","KWD","BHD","OMR","JOD","EGP","ILS"],
+  "Africa": ["USD","ZAR","NGN","KES","GHS","DZD","TZS","MAD","EGP"],
+  "Eastern EU": ["USD","PLN","CZK","HUF","RON","BGN","UAH","RUB","GEL","KZT","HRK"],
+  "All": ALL_CODES
 };
 
-const TICKER_CODES = ["EUR","GBP","JPY","CHF","CAD","AUD","CNY","INR","SGD","HKD","KRW","MXN","BRL","ZAR","NOK","SEK"];
-
-/* ─── STATE ─── */
-const S = {
-  sel:       new Set(),
-  dedupeMode: false,
-  favs:      new Set(JSON.parse(localStorage.getItem('fx_favs') || '[]')),
-  results:   {},           // code → {bid,ask,mid,date}
-  pasteRes:  [],           // [{code,name,data}]
-  rateType:  'bid',
-  base:      'USD',
-  sortCol:   'code',
-  sortDir:   1,
-  tickerDat: {},
+const state = {
+  selected: new Set(),
+  favorites: new Set(loadJson('fx_favs', [])),
+  customPresets: loadJson('fx_custom_presets', {}),
+  rateType: 'bid',
+  base: 'USD',
+  selectedDate: '',
+  sortCol: 'code',
+  sortDir: 1,
+  rawSelected: {},      // selected code -> raw USD pair for selectedDate
+  baseRaw: null,        // raw USD/base for selectedDate
+  baseRawDate: '',
+  baseRawCache: {},     // key `${date}|${base}` -> raw
+  tickerHistory: {},    // code -> { curr, prev }
+  dedupe: false,
+  pasteRows: [],
   activePreset: null,
-  baseRateCache: {},       // for cross-rate calcs: code → {bid,ask,mid}
+  fetching: false
 };
 
-/* ─── INIT ─── */
-document.addEventListener('DOMContentLoaded', () => {
-  const today = todayStr();
-  const di = document.getElementById('dateInput');
-  di.value = today;
-  di.max = today;
-  document.getElementById('dateLabel').textContent = today;
-
-  buildDropdown();
-  buildPresets();
-  refreshFavSection();
-  updateSettingsSummary();
-
-  document.addEventListener('click', e => {
-    if (!document.getElementById('msWrap').contains(e.target)) closeDrop();
-  });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrop(); });
-
-  setTickerSpeed(document.getElementById('spdSlider').value);
-  drawTickerSeed();
-  loadTicker();
-});
-
-function drawTickerSeed() {
-  const half = TICKER_CODES.map(code =>
-    `<span class="tkr-item">
-      <span class="tkr-flag">${FLAGS[code]||''}</span>
-      <span class="tkr-pair">USD/${code}</span>
-      <span class="tkr-rate" style="color:var(--text3)">···</span>
-    </span>`
-  ).join('');
-  document.getElementById('tkrInner').innerHTML = half + half;
+function loadJson(key, fallback){
+  try{
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : fallback;
+  }catch{ return fallback; }
 }
-   
-/* ─── TICKER ─── */
-async function loadTicker() {
-  const date = todayStr();
-  const twoDaysAgo = nDaysAgo(date, 7);
-  await Promise.allSettled(TICKER_CODES.map(async code => {
-    try {
-      const p = new URLSearchParams({ base:'USD', quote:code, data_type:'general_currency_pair', start_date:twoDaysAgo, end_date:date });
-      const res = await fetch(`${API}?${p}`);
-      if (!res.ok) return;
-      const json = await res.json();
-      const entries = json.response || [];
-      if (!entries.length) return;
-      const latest = entries[entries.length - 1];
-      const bid = parseFloat(latest.average_bid), ask = parseFloat(latest.average_ask);
-      if (isNaN(bid) || isNaN(ask)) return;
-      const mid = (bid + ask) / 2;
-      let prevMid = null;
-      if (entries.length >= 2) {
-        const prev = entries[entries.length - 2];
-        const pb = parseFloat(prev.average_bid), pa = parseFloat(prev.average_ask);
-        if (!isNaN(pb) && !isNaN(pa)) prevMid = (pb + pa) / 2;
-      }
-      S.tickerDat[code] = { bid, ask, mid, date:(latest.close_time||'').slice(0,10), prevMid };
-    } catch {}
-  }));
-  drawTicker(Object.keys(S.tickerDat).length > 0 ? Object.keys(S.tickerDat) : TICKER_CODES);
+function saveJson(key, value){
+  localStorage.setItem(key, JSON.stringify(value));
 }
-
-function nDaysAgo(d, n) {
-  const dt = new Date(d); dt.setDate(dt.getDate() - n);
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+function prevDay(d){
+  const dt = new Date(d); dt.setDate(dt.getDate()-1);
   return dt.toISOString().split('T')[0];
 }
-
-function drawTicker(codes) {
-  const availCodes = codes.filter(c => S.tickerDat[c]);
-  if (!availCodes.length) return;
-
-  const mkItem = code => {
-    const r = S.tickerDat[code];
-    const rate = getRate(r, 'ask');
-    let chg = '';
-    if (r.prevMid != null) {
-      if (r.mid > r.prevMid)      chg = `<span style="color:#f04060;font-size:0.7rem">▲</span>`;
-      else if (r.mid < r.prevMid) chg = `<span style="color:#00c97a;font-size:0.7rem">▼</span>`;
-      else                        chg = `<span style="color:#516070;font-size:0.7rem">●</span>`;
-    }
-    return `<span class="tkr-item">
-      <span class="tkr-flag">${FLAGS[code]||''}</span>
-      <span class="tkr-pair">USD/${code}</span>
-      <span class="tkr-rate">${fmt(rate, decimals(rate))}</span>
-      ${chg}
-    </span>`;
-  };
-  const half = availCodes.map(mkItem).join('');
-  document.getElementById('tkrInner').innerHTML = half + half;
+function nDaysAgo(d, n){
+  const dt = new Date(d); dt.setDate(dt.getDate()-n);
+  return dt.toISOString().split('T')[0];
+}
+function fmt(n, dec = 6){
+  if (n === null || n === undefined || Number.isNaN(n) || !Number.isFinite(n)) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1000) dec = 2;
+  else if (abs >= 100) dec = 3;
+  else if (abs >= 10) dec = 4;
+  else if (abs >= 1) dec = 6;
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function decimals(){ return 6; }
+function toast(msg, type='inf'){
+  const c = document.getElementById('toastC');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const ico = { ok:'✓', err:'✕', inf:'ℹ' }[type] || 'ℹ';
+  el.innerHTML = `<span>${ico}</span><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(10px)';
+    el.style.transition = 'all .25s';
+    setTimeout(() => el.remove(), 260);
+  }, 3200);
+}
+async function copyText(text){
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+}
+function downloadFile(content, name, mime){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 0);
 }
 
-function setTickerSpeed(val) {
+function initDateAndBase(){
+  const d = todayStr();
+  const di = document.getElementById('dateInput');
+  di.value = d;
+  di.max = d;
+  document.getElementById('dateLabel').textContent = d;
+  const baseSel = document.getElementById('baseSelect');
+  baseSel.innerHTML = ALL_CODES.map(code => `<option value="${code}">${FLAGS[code]||'🏳'} ${code} – ${CUR[code]}</option>`).join('');
+  baseSel.value = 'USD';
+}
+
+function updateSettingsSummary(){
+  const labels = { bid:'Avg Bid', ask:'Avg Ask', mid:'Mid Rate' };
+  const d = document.getElementById('dateInput').value;
+  document.getElementById('settingsSummary').textContent = `${state.base} base · ${labels[state.rateType]} · ${d}`;
+  document.getElementById('copyRateBtn').textContent = `Copy 1 ${state.base} = ?`;
+  document.getElementById('copyInvBtn').textContent = `Copy 1 = ? ${state.base}`;
+  document.getElementById('pasteRateHdr').textContent = `Rate (1 ${state.base} = ?)`;
+  document.getElementById('pasteInvHdr').textContent = `Inverse (1 = ? ${state.base})`;
+}
+
+function setTickerSpeed(val){
   const dur = Math.round(200 - (val / 100) * 187.5);
   document.getElementById('tkrInner').style.animationDuration = dur + 's';
 }
 
-/* ─── DROPDOWN ─── */
-function buildDropdown() {
-  const codes = Object.keys(CUR).sort();
-  document.getElementById('msList').innerHTML = codes.map(code => `
-    <div class="ms-row" data-code="${code}" onclick="toggleCode('${code}',event)">
+function seedTicker(){
+  const seed = ALL_CODES.map(code => `
+    <span class="tkr-item">
+      <span class="tkr-flag">${FLAGS[code]||''}</span>
+      <span class="tkr-pair">${code}/${state.base}</span>
+      <span class="tkr-rate" style="color:var(--text3)">···</span>
+    </span>`).join('');
+  document.getElementById('tkrInner').innerHTML = seed + seed;
+}
+
+async function apiHistory(quote, startDate, endDate){
+  const p = new URLSearchParams({
+    base: 'USD',
+    quote,
+    data_type: 'general_currency_pair',
+    start_date: startDate,
+    end_date: endDate
+  });
+  const res = await fetch(`${API}?${p}`);
+  if (!res.ok) throw new Error(`fetch ${res.status}`);
+  const json = await res.json();
+  const arr = Array.isArray(json.response) ? json.response : [];
+  return arr;
+}
+
+function entryToRaw(entry){
+  if (!entry) return null;
+  const bid = Number.parseFloat(entry.average_bid);
+  const ask = Number.parseFloat(entry.average_ask);
+  if (!Number.isFinite(bid) || !Number.isFinite(ask)) return null;
+  return {
+    bid,
+    ask,
+    mid: (bid + ask) / 2,
+    date: String(entry.close_time || '').slice(0, 10)
+  };
+}
+
+async function fetchPairSnapshot(code, date){
+  if (code === 'USD'){
+    return { bid: 1, ask: 1, mid: 1, date };
+  }
+  const start = nDaysAgo(date, 8);
+  const arr = await apiHistory(code, start, date);
+  if (!arr.length) return null;
+  const curr = entryToRaw(arr[arr.length - 1]);
+  return curr;
+}
+
+async function fetchPairHistory(code){
+  if (code === 'USD'){
+    return { curr: { bid:1, ask:1, mid:1, date:todayStr() }, prev: { bid:1, ask:1, mid:1, date:prevDay(todayStr()) } };
+  }
+  const date = todayStr();
+  const start = nDaysAgo(date, 8);
+  const arr = await apiHistory(code, start, date);
+  if (!arr.length) return null;
+  const curr = entryToRaw(arr[arr.length - 1]);
+  const prev = entryToRaw(arr[arr.length - 2] || arr[arr.length - 1]);
+  return { curr, prev };
+}
+
+function rawKey(date, base){ return `${date}|${base}`; }
+
+async function ensureBaseRaw(date){
+  const key = rawKey(date, state.base);
+  if (state.base === 'USD'){
+    state.baseRaw = { bid:1, ask:1, mid:1, date };
+    state.baseRawDate = date;
+    state.baseRawCache[key] = state.baseRaw;
+    return state.baseRaw;
+  }
+  if (state.baseRawCache[key]){
+    state.baseRaw = state.baseRawCache[key];
+    state.baseRawDate = date;
+    return state.baseRaw;
+  }
+  const raw = await fetchPairSnapshot(state.base, date);
+  if (!raw) return null;
+  state.baseRawCache[key] = raw;
+  state.baseRaw = raw;
+  state.baseRawDate = date;
+  return raw;
+}
+
+function convertToBase(raw, baseRaw, code){
+  if (!raw) return null;
+  if (code === state.base) return { bid:1, ask:1, mid:1, date: raw.date, valid:true };
+  if (!baseRaw) return null;
+  return {
+    bid: raw.bid / baseRaw.ask,
+    ask: raw.ask / baseRaw.bid,
+    mid: raw.mid / baseRaw.mid,
+    date: raw.date,
+    valid: true
+  };
+}
+
+function pairDisplayRate(raw, baseRaw, code){
+  const x = convertToBase(raw, baseRaw, code);
+  return x ? x : null;
+}
+
+function rateOf(obj){ return state.rateType === 'bid' ? obj.bid : state.rateType === 'ask' ? obj.ask : obj.mid; }
+
+function buildDropdown(){
+  document.getElementById('msList').innerHTML = ALL_CODES.map(code => `
+    <div class="ms-row" data-code="${code}" onclick="toggleCode('${code}', event)">
       <input type="checkbox" id="c_${code}" onclick="event.stopPropagation()">
       <span class="ms-row-flag">${FLAGS[code]||'🏳'}</span>
       <span class="ms-row-code">${code}</span>
       <span class="ms-row-name">${CUR[code]}</span>
-      <span class="fav-btn ${S.favs.has(code)?'on':''}" onclick="toggleFav('${code}',event)" title="Favourite">★</span>
-    </div>`).join('');
+      <span class="fav-btn ${state.favorites.has(code) ? 'on' : ''}" onclick="toggleFav('${code}', event)" title="Favourite">★</span>
+    </div>
+  `).join('');
 }
 
-function msFilter(q) {
+function renderPresetChips(){
+  document.getElementById('presetChips').innerHTML = Object.keys(BUILTIN_PRESETS).map(name => `
+    <span class="chip builtin-chip ${state.activePreset === `builtin:${name}` ? 'on' : ''}" onclick="applyPreset('builtin','${name}')">${name}</span>
+  `).join('');
+
+  const custom = Object.entries(state.customPresets);
+  document.getElementById('customPresetChips').innerHTML = custom.length ? custom.map(([name, codes]) => `
+    <span class="chip custom-chip ${state.activePreset === `custom:${name}` ? 'on' : ''}" title="${codes.join(', ')}" onclick="applyPreset('custom','${name}')">
+      ${name}
+      <span class="chip-del" onclick="deleteCustomPreset('${escapeJs(name)}', event)">✕</span>
+    </span>
+  `).join('') : `<div class="empty-state" style="padding:10px 0; text-align:left"><div class="empty-icon">⭐</div><div>No custom presets yet.</div></div>`;
+}
+
+function escapeJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+function refreshFavoritesSection(){
+  const sec = document.getElementById('favSection');
+  const chips = document.getElementById('favChips');
+  if (!state.favorites.size){ sec.style.display = 'none'; chips.innerHTML = ''; return; }
+  sec.style.display = 'block';
+  chips.innerHTML = [...state.favorites].sort().map(code => `
+    <span class="chip fav ${state.selected.has(code) ? 'on' : ''}" onclick="toggleFavChip('${code}')">${FLAGS[code]||''} ${code}</span>
+  `).join('');
+}
+
+function refreshSelectionUI(){
+  const n = state.selected.size;
+  document.getElementById('msBadge').style.display = n ? 'inline-block' : 'none';
+  document.getElementById('msBadge').textContent = n;
+  document.getElementById('msBtnLabel').textContent = n ? `${n} currencies selected` : 'Click to select currencies...';
+  document.getElementById('selCount').textContent = n ? `${n} selected` : '';
+  document.getElementById('fetchBtn').disabled = n === 0;
+  document.getElementById('selChips').innerHTML = [...state.selected].sort().map(code => `
+    <span class="sel-chip">
+      <span>${FLAGS[code]||''}</span>
+      <span class="sel-chip-code">${code}</span>
+      <span class="sel-chip-x" onclick="removeCode('${code}')">✕</span>
+    </span>
+  `).join('');
+  refreshFavoritesSection();
+}
+
+function toggleMs(){
+  const btn = document.getElementById('msBtn');
+  const drop = document.getElementById('msDrop');
+  const open = btn.classList.contains('open');
+  open ? closeDrop() : openDrop();
+}
+function openDrop(){
+  document.getElementById('msBtn').classList.add('open');
+  document.getElementById('msDrop').classList.add('show');
+  setTimeout(() => document.getElementById('msSearch').focus(), 50);
+}
+function closeDrop(){
+  document.getElementById('msBtn').classList.remove('open');
+  document.getElementById('msDrop').classList.remove('show');
+}
+function msFilter(q){
   const lq = q.toLowerCase();
   document.querySelectorAll('#msList .ms-row').forEach(r => {
     const c = r.dataset.code;
@@ -925,456 +844,495 @@ function msFilter(q) {
     r.classList.toggle('hidden', !match);
   });
 }
-
-function toggleMs() {
-  const open = document.getElementById('msBtn').classList.contains('open');
-  open ? closeDrop() : openDrop();
-}
-function openDrop() {
-  document.getElementById('msBtn').classList.add('open');
-  document.getElementById('msDrop').classList.add('show');
-  setTimeout(() => document.getElementById('msSearch').focus(), 50);
-}
-function closeDrop() {
-  document.getElementById('msBtn').classList.remove('open');
-  document.getElementById('msDrop').classList.remove('show');
-}
-
-function msSelectAll() {
-  document.querySelectorAll('#msList .ms-row:not(.hidden)').forEach(r => {
-    const c = r.dataset.code;
-    S.sel.add(c);
-    document.getElementById('c_'+c).checked = true;
-  });
-  refreshSelUI();
-}
-function msClearAll() {
-  document.querySelectorAll('#msList .ms-row').forEach(r => {
-    S.sel.delete(r.dataset.code);
-    document.getElementById('c_'+r.dataset.code).checked = false;
-  });
-  refreshSelUI();
-}
-
-function toggleCode(code, e) {
+function toggleCode(code, e){
   if (e.target.classList.contains('fav-btn')) return;
-  S.sel.has(code) ? S.sel.delete(code) : S.sel.add(code);
-  document.getElementById('c_'+code).checked = S.sel.has(code);
-  refreshSelUI();
+  if (state.selected.has(code)) state.selected.delete(code); else state.selected.add(code);
+  const box = document.getElementById(`c_${code}`);
+  if (box) box.checked = state.selected.has(code);
+  refreshSelectionUI();
 }
-
-function removeCode(code) {
-  S.sel.delete(code);
-  const el = document.getElementById('c_'+code);
-  if (el) el.checked = false;
-  refreshSelUI();
+function removeCode(code){
+  state.selected.delete(code);
+  const box = document.getElementById(`c_${code}`);
+  if (box) box.checked = false;
+  refreshSelectionUI();
 }
-
-function refreshSelUI() {
-  const n = S.sel.size;
-  const badge = document.getElementById('msBadge');
-  badge.style.display = n ? 'inline' : 'none';
-  badge.textContent = n;
-  document.getElementById('msBtnLabel').textContent = n ? `${n} currencies selected` : 'Click to select currencies...';
-  document.getElementById('selCount').textContent = n ? `${n} selected` : '';
-  document.getElementById('fetchBtn').disabled = n === 0;
-
-  document.getElementById('selChips').innerHTML = [...S.sel].sort().map(code =>
-    `<span class="sel-chip">
-      <span>${FLAGS[code]||''}</span>
-      <span class="sel-chip-code">${code}</span>
-      <span class="sel-chip-x" onclick="removeCode('${code}')">✕</span>
-    </span>`).join('');
-}
-
-function clearAll() {
-  msClearAll();
-  S.activePreset = null;
-  document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('on'));
-}
-
-/* ─── PRESETS ─── */
-function buildPresets() {
-  document.getElementById('presetChips').innerHTML =
-    Object.keys(PRESETS).map(name =>
-      `<span class="chip preset-chip" onclick="applyPreset('${name}')">${name}</span>`
-    ).join('');
-}
-
-function applyPreset(name) {
-  if (S.activePreset === name) { clearAll(); return; }
-  S.activePreset = name;
-  msClearAll();
-  const codes = PRESETS[name] || [];
-  codes.filter(c => CUR[c]).forEach(code => {
-    S.sel.add(code);
-    const el = document.getElementById('c_'+code);
-    if (el) el.checked = true;
+function msSelectAll(){
+  document.querySelectorAll('#msList .ms-row:not(.hidden)').forEach(row => {
+    const code = row.dataset.code;
+    state.selected.add(code);
+    const box = document.getElementById(`c_${code}`);
+    if (box) box.checked = true;
   });
-  document.querySelectorAll('.preset-chip').forEach(c =>
-    c.classList.toggle('on', c.textContent.trim() === name));
-  refreshSelUI();
+  refreshSelectionUI();
+}
+function msClearAll(){
+  document.querySelectorAll('#msList .ms-row').forEach(row => {
+    const code = row.dataset.code;
+    state.selected.delete(code);
+    const box = document.getElementById(`c_${code}`);
+    if (box) box.checked = false;
+  });
+  refreshSelectionUI();
+}
+function clearAll(){
+  msClearAll();
+  state.activePreset = null;
+  document.querySelectorAll('.builtin-chip, .custom-chip').forEach(c => c.classList.remove('on'));
 }
 
-/* ─── FAVOURITES ─── */
-function toggleFav(code, e) {
+function toggleFav(code, e){
   e.stopPropagation();
-  S.favs.has(code) ? S.favs.delete(code) : S.favs.add(code);
-  localStorage.setItem('fx_favs', JSON.stringify([...S.favs]));
-  document.querySelectorAll(`.ms-row[data-code="${code}"] .fav-btn`).forEach(el =>
-    el.classList.toggle('on', S.favs.has(code)));
-  refreshFavSection();
+  if (state.favorites.has(code)) state.favorites.delete(code); else state.favorites.add(code);
+  saveJson('fx_favs', [...state.favorites]);
+  document.querySelectorAll(`.ms-row[data-code="${code}"] .fav-btn`).forEach(el => el.classList.toggle('on', state.favorites.has(code)));
+  refreshFavoritesSection();
+}
+function toggleFavChip(code){
+  if (state.selected.has(code)) removeCode(code);
+  else {
+    state.selected.add(code);
+    const box = document.getElementById(`c_${code}`);
+    if (box) box.checked = true;
+    refreshSelectionUI();
+  }
 }
 
-function refreshFavSection() {
-  const sec = document.getElementById('favSection');
-  const chips = document.getElementById('favChips');
-  if (!S.favs.size) { sec.style.display = 'none'; return; }
-  sec.style.display = 'block';
-  chips.innerHTML = [...S.favs].map(code =>
-    `<span class="chip fav-chip ${S.sel.has(code)?'on':''}" onclick="toggleFavChip('${code}')" title="${CUR[code]||code}">
-      ${FLAGS[code]||''} ${code}
-    </span>`).join('');
+function applyPreset(kind, name){
+  const key = `${kind}:${name}`;
+  if (state.activePreset === key){ clearAll(); return; }
+  state.activePreset = key;
+  msClearAll();
+  document.querySelectorAll('.builtin-chip, .custom-chip').forEach(c => c.classList.remove('on'));
+  const codes = kind === 'builtin' ? BUILTIN_PRESETS[name] : (state.customPresets[name] || []);
+  (codes || []).filter(c => CUR[c]).forEach(code => {
+    state.selected.add(code);
+    const box = document.getElementById(`c_${code}`);
+    if (box) box.checked = true;
+  });
+  document.querySelectorAll(kind === 'builtin' ? '.builtin-chip' : '.custom-chip').forEach(c => {
+    if (c.textContent.trim().startsWith(name)) c.classList.add('on');
+  });
+  refreshSelectionUI();
+  toast(`Applied preset: ${name}`, 'ok');
 }
 
-function toggleFavChip(code) {
-  S.sel.has(code) ? removeCode(code) : (() => {
-    S.sel.add(code);
-    const el = document.getElementById('c_'+code);
-    if (el) el.checked = true;
-    refreshSelUI();
-    refreshFavSection();
-  })();
+function saveCustomPreset(){
+  const name = document.getElementById('customPresetName').value.trim();
+  if (!name){ toast('Enter a preset name first', 'err'); return; }
+  if (!state.selected.size){ toast('Select some currencies first', 'err'); return; }
+  state.customPresets[name] = [...state.selected].sort();
+  saveJson('fx_custom_presets', state.customPresets);
+  document.getElementById('customPresetName').value = '';
+  renderPresetChips();
+  toast(`Saved preset: ${name}`, 'ok');
+}
+function deleteCustomPreset(name, e){
+  e.stopPropagation();
+  if (!state.customPresets[name]) return;
+  delete state.customPresets[name];
+  saveJson('fx_custom_presets', state.customPresets);
+  if (state.activePreset === `custom:${name}`) state.activePreset = null;
+  renderPresetChips();
+  toast(`Deleted preset: ${name}`, 'inf');
 }
 
-function toggleFavFromTable(code) {
-  toggleFav(code, { stopPropagation:()=>{} });
-  renderTable();
-}
-
-/* ─── SETTINGS ─── */
-function setRateType(rt) {
-  S.rateType = rt;
-  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.toggle('on', b.dataset.rt === rt));
+function setRateType(rt){
+  state.rateType = rt;
+  document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.toggle('on', btn.dataset.rt === rt));
   updateSettingsSummary();
-  if (Object.keys(S.results).length) renderTable();
-  updatePasteRateHeader();
+  if (document.getElementById('resultsSection').style.display !== 'none') renderResults();
+  if (document.getElementById('pasteSection').style.display !== 'none') renderPasteResults();
 }
-
-function onBaseChange() {
-  S.base = document.getElementById('baseSelect').value;
-  S.baseRateCache = {};
+async function onBaseChange(){
+  state.base = document.getElementById('baseSelect').value;
   updateSettingsSummary();
+  renderTickerFromHistory();
+  if (state.selectedDate && (Object.keys(state.rawSelected).length || state.baseRawCache[rawKey(state.selectedDate, state.base)])){
+    const baseRaw = await ensureBaseRaw(state.selectedDate);
+    if (!baseRaw && state.base !== 'USD') {
+      toast(`Could not fetch base currency ${state.base}`, 'err');
+    }
+    if (Object.keys(state.rawSelected).length) renderResults();
+    if (state.pasteRows.length) renderPasteResults();
+  } else if (state.pasteRows.length) {
+    renderPasteResults();
+  }
 }
 
-function onDateChange() {
+function onDateChange(){
   const d = document.getElementById('dateInput').value;
   document.getElementById('dateLabel').textContent = d;
   updateSettingsSummary();
 }
 
-function updateSettingsSummary() {
-  const labels = { bid:'Avg Bid', ask:'Avg Ask', mid:'Mid Rate' };
-  const d = document.getElementById('dateInput').value;
-  document.getElementById('settingsSummary').textContent =
-    `${S.base} base · ${labels[S.rateType]} · ${d}`;
+async function loadTickerHistory(){
+  const date = todayStr();
+  const start = nDaysAgo(date, 8);
+  const batchSize = 6;
+  const out = {};
+  let done = 0;
+  for (let i = 0; i < ALL_CODES.length; i += batchSize){
+    const batch = ALL_CODES.slice(i, i + batchSize);
+    await Promise.allSettled(batch.map(async code => {
+      try{
+        if (code === 'USD'){
+          out[code] = { curr: { bid:1, ask:1, mid:1, date }, prev: { bid:1, ask:1, mid:1, date: prevDay(date) } };
+        } else {
+          const arr = await apiHistory(code, start, date);
+          if (arr.length){
+            const curr = entryToRaw(arr[arr.length - 1]);
+            const prev = entryToRaw(arr[arr.length - 2] || arr[arr.length - 1]);
+            out[code] = { curr, prev };
+          }
+        }
+      }catch{}
+      done++;
+      setTickerSpeed(document.getElementById('spdSlider').value);
+      document.getElementById('tkrInner').style.opacity = '0.95';
+    }));
+  }
+  state.tickerHistory = out;
+  renderTickerFromHistory();
 }
 
-/* ─── FETCH RATES ─── */
-async function fetchRates() {
-  if (!S.sel.size) { toast('Select at least one currency', 'err'); return; }
+function renderTickerFromHistory(){
+  const base = state.base;
+  const baseCurr = state.tickerHistory[base]?.curr || (base === 'USD' ? {bid:1,ask:1,mid:1,date:todayStr()} : null);
+  const basePrev = state.tickerHistory[base]?.prev || (base === 'USD' ? {bid:1,ask:1,mid:1,date:prevDay(todayStr())} : null);
+
+  const item = (code) => {
+    const h = state.tickerHistory[code];
+    if (!h || !h.curr) {
+      return `<span class="tkr-item"><span class="tkr-flag">${FLAGS[code]||''}</span><span class="tkr-pair">${code}/${base}</span><span class="tkr-rate">—</span></span>`;
+    }
+    const current = code === base ? { bid:1, ask:1, mid:1 } : (baseCurr ? convertToBase(h.curr, baseCurr, code) : null);
+    const previous = code === base ? { bid:1, ask:1, mid:1 } : (basePrev ? convertToBase(h.prev, basePrev, code) : null);
+    const rate = current ? rateOf(current) : null;
+    let chg = '';
+    if (current && previous) {
+      const delta = rateOf(current) - rateOf(previous);
+      chg = delta > 0 ? `<span class="tkr-chg" style="color:var(--red)">▲</span>` : delta < 0 ? `<span class="tkr-chg" style="color:var(--green)">▼</span>` : `<span class="tkr-chg" style="color:var(--text3)">●</span>`;
+    }
+    return `<span class="tkr-item">
+      <span class="tkr-flag">${FLAGS[code]||''}</span>
+      <span class="tkr-pair">${code}/${base}</span>
+      <span class="tkr-rate">${fmt(rate, decimals())}</span>
+      ${chg}
+    </span>`;
+  };
+
+  const half = ALL_CODES.map(item).join('');
+  document.getElementById('tkrInner').innerHTML = half + half;
+}
+
+async function fetchRates(){
+  if (!state.selected.size){ toast('Select at least one currency', 'err'); return; }
+  if (state.fetching) return;
+  state.fetching = true;
 
   const btn = document.getElementById('fetchBtn');
   setLoading(btn, true);
   showProg('mainProg', 'mainProgBar');
+  document.getElementById('corsNotice').style.display = 'none';
 
   const date = document.getElementById('dateInput').value;
-  const prev = prevDay(date);
-  const codes = [...S.sel];
-  S.results = {};
+  state.selectedDate = date;
+  updateSettingsSummary();
 
-  // If non-USD base, pre-fetch the base rate
-  let baseRateUSD = null;
-  if (S.base !== 'USD') {
-    try { baseRateUSD = await apiCall('USD', S.base, prev, date); } catch {}
-    if (!baseRateUSD) {
-      toast(`Could not fetch base currency ${S.base} rate`, 'err');
-      setLoading(btn, false);
-      hideProg('mainProg');
+  const prev = prevDay(date);
+  const selectedCodes = [...state.selected];
+  state.rawSelected = {};
+
+  let totalSteps = selectedCodes.length + (state.base === 'USD' ? 0 : 1);
+  let done = 0;
+
+  try{
+    state.baseRaw = await ensureBaseRaw(date);
+    if (state.base !== 'USD' && !state.baseRaw){
+      document.getElementById('corsNotice').style.display = 'block';
+      toast(`Could not fetch base currency ${state.base}`, 'err');
       return;
     }
-  }
 
-  let done = 0;
-  let corsErr = false;
-
-  // Batch concurrency: 6 at a time
-  for (let i = 0; i < codes.length; i += 6) {
-    const batch = codes.slice(i, i + 6);
-    await Promise.allSettled(batch.map(async code => {
-      try {
-        const r = await apiCall('USD', code, prev, date);
-        if (r) {
-          if (S.base === 'USD') {
-            S.results[code] = r;
-          } else if (baseRateUSD) {
-            // Cross rate: base → code
-            const bBid = getRate(baseRateUSD, 'bid');
-            const bAsk = getRate(baseRateUSD, 'ask');
-            const bMid = getRate(baseRateUSD, 'mid');
-            S.results[code] = {
-              bid:  bBid > 0 ? r.bid / bBid : 0,
-              ask:  bAsk > 0 ? r.ask / bAsk : 0,
-              mid:  bMid > 0 ? r.mid / bMid : 0,
-              date: r.date,
-            };
+    for (let i = 0; i < selectedCodes.length; i += 6){
+      const batch = selectedCodes.slice(i, i + 6);
+      await Promise.allSettled(batch.map(async code => {
+        try{
+          if (code === 'USD') {
+            state.rawSelected[code] = { bid:1, ask:1, mid:1, date };
+          } else {
+            const arr = await apiHistory(code, prev, date);
+            const raw = arr.length ? entryToRaw(arr[arr.length - 1]) : null;
+            state.rawSelected[code] = raw;
           }
+        }catch{
+          state.rawSelected[code] = null;
+        } finally {
+          done++;
+          setProg('mainProgBar', done / totalSteps);
         }
-      } catch (err) {
-        if (err.message && err.message.includes('fetch')) corsErr = true;
-      }
+      }));
+    }
+
+    if (state.base !== 'USD' && state.baseRaw) {
       done++;
-      setProg('mainProgBar', done / codes.length);
-    }));
-  }
+      setProg('mainProgBar', done / totalSteps);
+    }
 
-  setLoading(btn, false);
-  hideProg('mainProg');
-
-  if (corsErr || !Object.keys(S.results).length) {
+    renderResults();
+    document.getElementById('resultsSection').style.display = 'block';
+    document.getElementById('resultsSection').scrollIntoView({ behavior:'smooth', block:'nearest' });
+    document.getElementById('lastUpdated').innerHTML = `<span class="hdr-pill-dot" style="background:var(--green)"></span> Updated ${new Date().toLocaleTimeString()}`;
+    const validCount = Object.keys(state.rawSelected).filter(code => code === 'USD' || state.rawSelected[code]).length;
+    const invalidCount = selectedCodes.length - validCount;
+    toast(`Fetched ${validCount}/${selectedCodes.length} currencies${invalidCount ? ` · ${invalidCount} invalid` : ''}`, 'ok');
+    if (invalidCount > 0) {
+      document.getElementById('corsNotice').style.display = 'block';
+      document.getElementById('corsNotice').innerHTML = `<strong>⚠ Some currencies could not be fetched.</strong> Valid: ${validCount}, Invalid: ${invalidCount}.`;
+    }
+  } catch (err){
     document.getElementById('corsNotice').style.display = 'block';
     toast('API fetch failed — see notice above', 'err');
-    return;
+  } finally {
+    setLoading(btn, false);
+    hideProg('mainProg');
+    state.fetching = false;
   }
-
-  document.getElementById('corsNotice').style.display = 'none';
-  document.getElementById('lastUpdated').innerHTML =
-    `<span class="hdr-pill-dot" style="background:var(--green)"></span> Updated ${new Date().toLocaleTimeString()}`;
-
-  // Refresh ticker with latest data — preserve prevMid from initial load
-codes.forEach(code => {
-  if (S.results[code]) {
-    S.tickerDat[code] = { ...S.results[code], prevMid: S.tickerDat[code]?.prevMid ?? null };
-  }
-});
-drawTicker(codes);
-
-  renderStats();
-  renderTable();
-  document.getElementById('resultsSection').style.display = 'block';
-  document.getElementById('resultsSection').scrollIntoView({ behavior:'smooth', block:'nearest' });
-  toast(`✓ Fetched ${Object.keys(S.results).length}/${codes.length} currencies`, 'ok');
 }
 
-/* ─── RENDER STATS ─── */
-function renderStats() {
-  const codes = Object.keys(S.results);
-  if (!codes.length) return;
-  const base = S.base;
-
-  // Strongest = highest inverse rate (1 unit = most base)
-  let strongest = codes[0], weakest = codes[0];
-  codes.forEach(c => {
-    const r = getRate(S.results[c], S.rateType);
-    const rs = getRate(S.results[strongest], S.rateType);
-    const rw = getRate(S.results[weakest], S.rateType);
-    // Lower rate vs USD = stronger (e.g. KWD = 0.3 USD/KWD → 3.3 KWD)
-    // Actually inverse: 1 unit = 1/rate base → higher inverse = stronger
-    if (r > 0 && (1/r > 1/rs)) strongest = c;
-    if (r > 0 && (1/r < 1/rw)) weakest = c;
-  });
-
-  document.getElementById('statsRow').innerHTML = [
-    { v: codes.length, l: 'Currencies Fetched' },
-    { v: base,         l: 'Base Currency' },
-    { v: `${FLAGS[strongest]||''} ${strongest}`, l: 'Strongest vs '+base },
-    { v: `${FLAGS[weakest]||''} ${weakest}`,     l: 'Weakest vs '+base },
-    { v: document.getElementById('dateInput').value, l: 'Rate Date' },
-  ].map(s =>
-    `<div class="stat"><div class="stat-v">${s.v}</div><div class="stat-l">${s.l}</div></div>`
-  ).join('');
+function showProg(wrapId, barId){
+  document.getElementById(wrapId).style.display = 'block';
+  document.getElementById(barId).style.width = '0%';
+}
+function hideProg(wrapId){ document.getElementById(wrapId).style.display = 'none'; }
+function setProg(barId, frac){ document.getElementById(barId).style.width = `${Math.max(0, Math.min(1, frac)) * 100}%`; }
+function setLoading(btn, on){
+  btn.classList.toggle('loading', on);
+  btn.disabled = on;
 }
 
-/* ─── RENDER TABLE ─── */
-function renderTable() {
-  const codes = Object.keys(S.results);
-  const base = S.base;
-  const rLabel = { bid:'Avg Bid', ask:'Avg Ask', mid:'Mid Rate' }[S.rateType];
+function renderResults(){
+  const codes = [...state.selected];
+  const baseRaw = state.base === 'USD' ? { bid:1, ask:1, mid:1, date: state.selectedDate } : state.baseRaw;
+  const labels = { bid:'Avg Bid', ask:'Avg Ask', mid:'Mid Rate' };
 
-  document.getElementById('tblTitle').textContent =
-    `${codes.length} currencies · ${rLabel} · Base ${base}`;
+  document.getElementById('tblTitle').textContent = `${codes.length} currencies · ${labels[state.rateType]} · Base ${state.base}`;
+  document.getElementById('pasteTblTitle').textContent = `${state.pasteRows.length} currencies · ${labels[state.rateType]} · ${state.selectedDate || todayStr()}`;
+  updateSettingsSummary();
 
-  const arw = col => `<span class="arr">${S.sortCol===col ? (S.sortDir===1?'↑':'↓') : '↕'}</span>`;
-  const th = (col, label) => `<th class="${S.sortCol===col?'srt':''}" onclick="sortBy('${col}')">${label}${arw(col)}</th>`;
-  document.getElementById('tblHead').innerHTML = `<tr>
-    <th>#</th><th> </th>
-    ${th('code','Code')}${th('name','Currency')}
-    ${th('rate','1 '+base+' =')}
-    ${th('inv','1 Unit = '+base)}
-    ${th('spread','Bid-Ask Spread')}
-    ${th('date','Date')}
-    <th>★</th>
-  </tr>`;
-
-  let rows = codes.map(code => {
-    const r = S.results[code];
-    const rate = getRate(r, S.rateType);
+  const rows = codes.map(code => {
+    const raw = state.rawSelected[code] || (code === 'USD' ? { bid:1, ask:1, mid:1, date: state.selectedDate } : null);
+    const valid = !!(raw || code === state.base);
+    let rateObj = null;
+    if (valid){
+      const source = raw || { bid:1, ask:1, mid:1, date: state.selectedDate };
+      rateObj = convertToBase(source, baseRaw, code);
+    }
+    const rate = rateObj ? rateOf(rateObj) : null;
+    const inv = rate ? 1 / rate : null;
+    const spreadPct = rateObj ? (Math.abs(rateObj.ask - rateObj.bid) / rateObj.mid) * 100 : null;
     return {
-      code, name: CUR[code]||code,
-      rate, inv: rate > 0 ? 1/rate : 0,
-      spread: r ? Math.abs(r.ask - r.bid) : 0,
-      spreadPct: r && r.mid > 0 ? Math.abs(r.ask - r.bid) / r.mid * 100 : 0,
-      date: r?.date || '',
-      bid: r?.bid || 0, ask: r?.ask || 0,
+      code,
+      name: CUR[code] || code,
+      rateObj,
+      rate,
+      inv,
+      spreadPct,
+      date: (raw && raw.date) || (code === state.base ? state.selectedDate : ''),
+      status: (valid && rateObj) ? 'VALID' : (code === state.base ? 'VALID' : 'INVALID'),
+      valid: !!(valid && rateObj)
     };
   });
 
-  const col = S.sortCol;
-  rows.sort((a, b) => {
-    if (col === 'code') return a.code.localeCompare(b.code) * S.sortDir;
-    if (col === 'name') return a.name.localeCompare(b.name) * S.sortDir;
-    if (col === 'date') return a.date.localeCompare(b.date) * S.sortDir;
-    return (a[col] - b[col]) * S.sortDir;
+  rows.sort((a,b) => {
+    const dir = state.sortDir;
+    const col = state.sortCol;
+    const aInvalid = a.status !== 'VALID';
+    const bInvalid = b.status !== 'VALID';
+    if (aInvalid !== bInvalid) return aInvalid ? 1 : -1;
+    if (col === 'code') return a.code.localeCompare(b.code) * dir;
+    if (col === 'name') return a.name.localeCompare(b.name) * dir;
+    if (col === 'date') return String(a.date).localeCompare(String(b.date)) * dir;
+    if (col === 'status') return a.status.localeCompare(b.status) * dir;
+    return ((a[col] ?? 0) - (b[col] ?? 0)) * dir;
   });
 
-  document.getElementById('tblBody').innerHTML = rows.map((row, i) => {
-    const isFav = S.favs.has(row.code);
-    const dec = decimals(row.rate);
-    return `<tr class="${isFav?'fav-row':''}" data-code="${row.code}" data-name="${row.name.toLowerCase()}">
-      <td class="td-n">${i+1}</td>
-      <td class="td-flag">${FLAGS[row.code]||'🏳'}</td>
+  const validRows = rows.filter(r => r.valid);
+  const validCount = validRows.length;
+  const invalidCount = rows.length - validCount;
+  const strongest = validRows.length ? [...validRows].sort((x,y) => x.rate - y.rate)[0] : null;
+  const weakest = validRows.length ? [...validRows].sort((x,y) => y.rate - x.rate)[0] : null;
+
+  document.getElementById('statsRow').innerHTML = [
+    { v: rows.length, l: 'Selected' },
+    { v: validCount, l: 'Fetched' },
+    { v: invalidCount, l: 'Invalid' },
+    { v: state.base, l: 'Base Currency' },
+    { v: strongest ? `${FLAGS[strongest.code]||''} ${strongest.code}` : '—', l: `Strongest vs ${state.base}` },
+    { v: weakest ? `${FLAGS[weakest.code]||''} ${weakest.code}` : '—', l: `Weakest vs ${state.base}` }
+  ].map(s => `<div class="stat"><div class="stat-v">${s.v}</div><div class="stat-l">${s.l}</div></div>`).join('');
+
+  const sortMark = c => `<span class="arr">${state.sortCol === c ? (state.sortDir === 1 ? '↑' : '↓') : '↕'}</span>`;
+  const th = (c, label) => `<th class="${state.sortCol === c ? 'srt' : ''}" onclick="sortBy('${c}')">${label}${sortMark(c)}</th>`;
+  document.getElementById('tblHead').innerHTML = `<tr>
+    <th class="noclick">#</th>
+    <th class="noclick"> </th>
+    ${th('code','Code')}
+    ${th('name','Currency')}
+    ${th('rate',`1 ${state.base} =`)}
+    ${th('inv',`1 Unit = ${state.base}`)}
+    ${th('spread','Bid-Ask Spread')}
+    ${th('date','Date')}
+    ${th('status','Status')}
+    <th class="noclick">★</th>
+  </tr>`;
+
+  document.getElementById('tblBody').innerHTML = rows.map((row, i) => `
+    <tr class="${state.favorites.has(row.code) ? 'fav-row' : ''}" data-code="${row.code}" data-name="${row.name.toLowerCase()}">
+      <td class="td-n">${i + 1}</td>
+      <td class="td-flag">${FLAGS[row.code] || '🏳'}</td>
       <td class="td-code">${row.code}</td>
       <td class="td-name">${row.name}</td>
-      <td class="td-rate" onclick="quickCopy('${row.code}',${row.rate})" title="Click to copy">${fmt(row.rate, dec)}</td>
-      <td class="td-inv">${fmt(row.inv, decimals(row.inv))}</td>
-      <td class="td-spread">${row.spread > 0 ? fmt(row.spreadPct, 4) + '%' : '—'}</td>
+      <td class="td-rate" onclick="quickCopy('${row.code}', ${row.rate ?? 'null'})" title="Click to copy">${row.valid ? fmt(row.rate) : '—'}</td>
+      <td class="td-inv">${row.valid ? fmt(row.inv) : '—'}</td>
+      <td class="td-spread">${row.valid ? fmt(row.spreadPct, 4) + '%' : '—'}</td>
       <td class="td-date">${row.date || '—'}</td>
-      <td><span class="td-fav" onclick="toggleFavFromTable('${row.code}')" title="${isFav?'Remove':'Add to'} favourites">${isFav?'⭐':'☆'}</span></td>
-    </tr>`;
+      <td class="td-status ${row.valid ? 'ok' : 'bad'}">${row.valid ? 'VALID' : 'INVALID'}</td>
+      <td><span class="td-fav" onclick="toggleFavFromTable('${row.code}')" title="${state.favorites.has(row.code) ? 'Remove' : 'Add'} favourite">${state.favorites.has(row.code) ? '⭐' : '☆'}</span></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('resultsSection').style.display = rows.length ? 'block' : 'none';
+  document.getElementById('copyRateBtn').textContent = `Copy 1 ${state.base} = ?`;
+  document.getElementById('copyInvBtn').textContent = `Copy 1 = ? ${state.base}`;
+}
+
+function renderPasteResults(){
+  const labels = { bid:'Avg Bid', ask:'Avg Ask', mid:'Mid Rate' };
+  document.getElementById('pasteTblTitle').textContent = `${state.pasteRows.length} currencies · ${labels[state.rateType]} · ${document.getElementById('dateInput').value}`;
+  updatePasteRateHeader();
+  const baseRaw = state.base === 'USD' ? { bid:1, ask:1, mid:1, date: document.getElementById('dateInput').value } : state.baseRaw;
+  document.getElementById('pasteTblBody').innerHTML = state.pasteRows.map(item => {
+    const raw = item.code === 'USD' ? { bid:1, ask:1, mid:1, date: document.getElementById('dateInput').value } : item.data;
+    const valid = !!(raw || item.code === state.base);
+    const rateObj = valid ? convertToBase(raw || {bid:1,ask:1,mid:1,date:''}, baseRaw, item.code) : null;
+    const rate = rateObj ? rateOf(rateObj) : null;
+    const inv = rate ? 1/rate : null;
+    if (!valid || !rateObj){
+      if (item.code === state.base) {
+        return `
+          <tr>
+            <td class="td-flag">${FLAGS[item.code]||'🏳'}</td>
+            <td class="td-code">${item.code}</td>
+            <td class="td-name">${item.name}</td>
+            <td class="td-rate">${fmt(1)}</td>
+            <td class="td-inv">${fmt(1)}</td>
+            <td class="td-inv">1.000000</td>
+            <td class="td-inv">1.000000</td>
+            <td class="td-status ok">VALID</td>
+          </tr>`;
+      }
+      return `
+        <tr>
+          <td class="td-flag">${FLAGS[item.code]||'🏳'}</td>
+          <td class="td-code">${item.code}</td>
+          <td class="td-name">${item.name}</td>
+          <td colspan="4" style="color:var(--text3)">—</td>
+          <td class="td-status bad">INVALID</td>
+        </tr>`;
+    }
+    return `
+      <tr>
+        <td class="td-flag">${FLAGS[item.code]||'🏳'}</td>
+        <td class="td-code">${item.code}</td>
+        <td class="td-name">${item.name}</td>
+        <td class="td-rate" onclick="quickCopy('${item.code}', ${rate})" title="Click to copy">${fmt(rate)}</td>
+        <td class="td-inv">${fmt(inv)}</td>
+        <td class="td-inv">${fmt(item.data.bid)}</td>
+        <td class="td-inv">${fmt(item.data.ask)}</td>
+        <td class="td-status ok">VALID</td>
+      </tr>`;
   }).join('');
 }
 
-function sortBy(col) {
-  S.sortDir = S.sortCol === col ? -S.sortDir : 1;
-  S.sortCol = col;
-  renderTable();
+function updatePasteRateHeader(){
+  document.getElementById('pasteRateHdr').textContent = `Rate (1 ${state.base} = ?)`;
+  document.getElementById('pasteInvHdr').textContent = `Inverse (1 = ? ${state.base})`;
 }
 
-function filterTbl(q) {
+function setRateTypeUI(){ document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.toggle('on', btn.dataset.rt === state.rateType)); }
+
+function sortBy(col){
+  state.sortDir = state.sortCol === col ? -state.sortDir : 1;
+  state.sortCol = col;
+  if (document.getElementById('resultsSection').style.display !== 'none') renderResults();
+}
+
+function filterTbl(q){
   const lq = q.toLowerCase();
   document.querySelectorAll('#tblBody tr').forEach(r => {
-    const match = !lq || (r.dataset.code||'').toLowerCase().includes(lq) || (r.dataset.name||'').includes(lq);
+    const match = !lq || (r.dataset.code || '').toLowerCase().includes(lq) || (r.dataset.name || '').includes(lq);
     r.style.display = match ? '' : 'none';
   });
 }
 
-/* ─── COPY / EXPORT — MAIN TABLE ─── */
-function quickCopy(code, rate) {
-  cp(fmt(rate, decimals(rate)));
-  toast(`Copied ${code}: ${fmt(rate, decimals(rate))}`, 'ok');
+async function quickCopy(code, rate){
+  if (rate === null || rate === undefined || Number.isNaN(Number(rate))) return;
+  await copyText(fmt(rate));
+  toast(`Copied ${code}: ${fmt(rate)}`, 'ok');
 }
 
-function copyRates() {
-  const visible = [...document.querySelectorAll('#tblBody tr:not([style*="display: none"])')];
-  cp(visible.map(r => r.querySelectorAll('td')[4]?.textContent.trim()).filter(Boolean).join('\n'));
-  toast(`${visible.length} rates copied`, 'ok');
+function visibleMainRows(){
+  return [...document.querySelectorAll('#tblBody tr')].filter(r => r.style.display !== 'none');
 }
-
-function copyTbl() {
-  const visible = [...document.querySelectorAll('#tblBody tr:not([style*="display: none"])')];
-  const base = S.base;
-  const lines = [`Code\tCurrency\t1 ${base} =\t1 Unit = ${base}\tSpread %\tDate`];
-  visible.forEach(r => {
-    const cells = r.querySelectorAll('td');
-    lines.push([cells[2],cells[3],cells[4],cells[5],cells[6],cells[7]].map(c=>c?.textContent.trim()||'').join('\t'));
+function copyMainColumn(which){
+  const rows = visibleMainRows();
+  const idx = which === 'rate' ? 4 : 5;
+  const lines = rows.map(r => {
+    const tds = r.querySelectorAll('td');
+    return tds[idx]?.textContent.trim() || '';
+  }).filter(Boolean);
+  copyText(lines.join('\n'));
+  toast(`${lines.length} values copied`, 'ok');
+}
+function copyMainTable(){
+  const rows = visibleMainRows();
+  const lines = [`Code\tCurrency\t1 ${state.base} =\t1 Unit = ${state.base}\tSpread %\tDate\tStatus`];
+  rows.forEach(r => {
+    const tds = r.querySelectorAll('td');
+    lines.push([tds[2], tds[3], tds[4], tds[5], tds[6], tds[7], tds[8]].map(td => td?.textContent.trim() || '').join('\t'));
   });
-  cp(lines.join('\n'));
+  copyText(lines.join('\n'));
   toast('Table copied (paste into Excel)', 'ok');
 }
-
-function dlCSV() {
-  const visible = [...document.querySelectorAll('#tblBody tr:not([style*="display: none"])')];
-  const base = S.base;
-  const d = document.getElementById('dateInput').value;
-  const lines = [`Code,Currency,1 ${base} =,1 Unit = ${base},Spread %,Date`];
-  visible.forEach(r => {
-    const cells = r.querySelectorAll('td');
-    const code = cells[2]?.textContent.trim()||'';
+function downloadMainCSV(){
+  const rows = visibleMainRows();
+  const lines = [`Code,Currency,1 ${state.base} =,1 Unit = ${state.base},Spread %,Date,Status`];
+  rows.forEach(r => {
+    const tds = r.querySelectorAll('td');
     lines.push([
-      code,
-      `"${cells[3]?.textContent.trim()||''}"`,
-      cells[4]?.textContent.trim()||'',
-      cells[5]?.textContent.trim()||'',
-      cells[6]?.textContent.trim()||'',
-      cells[7]?.textContent.trim()||d,
+      tds[2]?.textContent.trim() || '',
+      `"${tds[3]?.textContent.trim() || ''}"`,
+      tds[4]?.textContent.trim() || '',
+      tds[5]?.textContent.trim() || '',
+      tds[6]?.textContent.trim() || '',
+      tds[7]?.textContent.trim() || '',
+      tds[8]?.textContent.trim() || ''
     ].join(','));
   });
-  dlFile(lines.join('\n'), `fx_rates_${base}_${d}.csv`, 'text/csv');
+  downloadFile(lines.join('\n'), `fx_rates_${state.base}_${document.getElementById('dateInput').value}.csv`, 'text/csv');
   toast('CSV downloaded', 'inf');
 }
 
-/* ─── PASTE MODE ─── */
-async function runPaste() {
-  const raw = document.getElementById('pasteArea').value.trim();
-  if (!raw) { toast('Nothing pasted yet!', 'err'); return; }
-
-  const allCodes = parsePaste(raw);           // may contain duplicates
-  if (!allCodes.length) { toast('No valid currency codes found', 'err'); return; }
-
-  const uniqueCodes = [...new Set(allCodes)]; // only fetch each code once
-
-  const btn = document.getElementById('pasteBtn');
-  setLoading(btn, true);
-  showProg('pasteProg', 'pasteProgBar');
-
-  const date = document.getElementById('dateInput').value;
-  const prev = prevDay(date);
-
-  let done = 0, corsErr = false;
-  const raw_results = {};
-
-  for (let i = 0; i < uniqueCodes.length; i += 6) {
-    const batch = uniqueCodes.slice(i, i + 6);
-    await Promise.allSettled(batch.map(async code => {
-      try { raw_results[code] = await apiCall('USD', code, prev, date); }
-      catch (err) { if (err.message?.includes('fetch')) corsErr = true; }
-      done++;
-      setProg('pasteProgBar', done / uniqueCodes.length);
-    }));
-  }
-
-  // Map back to full list (preserving duplicates)
-  S.pasteRes = allCodes.map(code => ({
-    code, name: CUR[code]||code, data: raw_results[code]||null
-  }));
-
-  setLoading(btn, false);
-  hideProg('pasteProg');
-
-  if (corsErr && !S.pasteRes.some(r => r.data)) {
-    document.getElementById('corsNotice').style.display = 'block';
-    toast('API fetch failed — see notice above', 'err');
-    return;
-  }
-
-  renderPasteTable();
-  document.getElementById('pasteSection').style.display = 'block';
-  document.getElementById('pasteSection').scrollIntoView({ behavior:'smooth', block:'nearest' });
-  const ok = S.pasteRes.filter(r => r.data).length;
-  const dupeNote = allCodes.length > uniqueCodes.length ? ` (${uniqueCodes.length} unique)` : '';
-  toast(`✓ ${ok}/${allCodes.length} rows fetched${dupeNote}`, 'ok');
-}
-
-function parsePaste(raw) {
-  const allCodes = Object.keys(CUR);
-  const found = [], seen = new Set();
-  raw.split('\n').forEach(line => {
+function parsePaste(raw){
+  const found = [];
+  const seen = new Set();
+  raw.split(/\r?\n/).forEach(line => {
     line.split(/[\t,;|\s]+/).forEach(token => {
       const clean = token.trim().toUpperCase().replace(/[^A-Z]/g, '');
-      if (clean.length === 3 && allCodes.includes(clean)) {
-        if (!S.dedupeMode || !seen.has(clean)) {
-          found.push(clean);
-        }
+      if (clean.length === 3 && CUR[clean]) {
+        if (!state.dedupe || !seen.has(clean)) found.push(clean);
         seen.add(clean);
       }
     });
@@ -1382,11 +1340,11 @@ function parsePaste(raw) {
   return found;
 }
 
-function toggleDedup() {
-  S.dedupeMode = !S.dedupeMode;
-  const knob = document.getElementById('dedupKnob');
+function toggleDedup(){
+  state.dedupe = !state.dedupe;
   const track = document.getElementById('dedupToggle');
-  if (S.dedupeMode) {
+  const knob = document.getElementById('dedupKnob');
+  if (state.dedupe) {
     track.style.background = 'var(--amber)';
     knob.style.left = '20px';
     knob.style.background = '#000';
@@ -1397,182 +1355,133 @@ function toggleDedup() {
   }
 }
 
-function renderPasteTable() {
-  const base = S.base;
-  const rLabel = { bid:'Avg Bid', ask:'Avg Ask', mid:'Mid Rate' }[S.rateType];
-  document.getElementById('pasteTblTitle').textContent =
-    `${S.pasteRes.length} currencies · ${rLabel} · ${document.getElementById('dateInput').value}`;
-  updatePasteRateHeader();
+async function runPaste(){
+  const raw = document.getElementById('pasteArea').value.trim();
+  if (!raw){ toast('Nothing pasted yet!', 'err'); return; }
+  const allCodes = parsePaste(raw);
+  if (!allCodes.length){ toast('No valid currency codes found', 'err'); return; }
+  const uniqueCodes = [...new Set(allCodes)];
+  const btn = document.getElementById('pasteBtn');
+  setLoading(btn, true);
+  showProg('pasteProg', 'pasteProgBar');
 
-  document.getElementById('pasteTblBody').innerHTML = S.pasteRes.map(item => {
-    if (!item.data) return `
-      <tr>
-        <td class="td-flag">${FLAGS[item.code]||'🏳'}</td>
-        <td class="td-code">${item.code}</td>
-        <td class="td-name">${item.name}</td>
-        <td colspan="4" style="color:var(--text3)">—</td>
-        <td><span style="color:var(--red);font-size:0.78rem;font-family:var(--mono)">NO DATA</span></td>
-      </tr>`;
-    const rate = getRate(item.data, S.rateType);
-    const inv = rate > 0 ? 1/rate : 0;
-    const dec = decimals(rate);
-    return `<tr>
-      <td class="td-flag">${FLAGS[item.code]||'🏳'}</td>
-      <td class="td-code">${item.code}</td>
-      <td class="td-name">${item.name}</td>
-      <td class="td-rate" onclick="quickCopy('${item.code}',${rate})" title="Click to copy">${fmt(rate, dec)}</td>
-      <td class="td-inv">${fmt(inv, decimals(inv))}</td>
-      <td class="td-inv">${fmt(item.data.bid, decimals(item.data.bid))}</td>
-      <td class="td-inv">${fmt(item.data.ask, decimals(item.data.ask))}</td>
-      <td><span style="color:var(--green);font-size:0.78rem;font-family:var(--mono)">✓ OK</span></td>
-    </tr>`;
-  }).join('');
-}
+  const date = document.getElementById('dateInput').value;
+  const prev = prevDay(date);
+  state.pasteRows = [];
+  const rawMap = {};
+  let done = 0;
+  let total = uniqueCodes.length;
 
-function updatePasteRateHeader() {
-  const el = document.getElementById('pasteRateHdr');
-  if (el) {
-    const base = document.getElementById('baseSelect')?.value || 'USD';
-    const rLabel = { bid:'Avg Bid', ask:'Avg Ask', mid:'Mid' }[S.rateType];
-    el.textContent = `${rLabel} (1 ${base} = ?)`;
+  try{
+    for (let i = 0; i < uniqueCodes.length; i += 6) {
+      const batch = uniqueCodes.slice(i, i + 6);
+      await Promise.allSettled(batch.map(async code => {
+        try{
+          rawMap[code] = code === 'USD' ? { bid:1, ask:1, mid:1, date } : entryToRaw((await apiHistory(code, prev, date)).slice(-1)[0]);
+        }catch{
+          rawMap[code] = null;
+        } finally {
+          done++;
+          setProg('pasteProgBar', done / total);
+        }
+      }));
+    }
+
+    state.pasteRows = allCodes.map(code => ({
+      code,
+      name: CUR[code] || code,
+      data: rawMap[code] || null
+    }));
+
+    renderPasteResults();
+    document.getElementById('pasteSection').style.display = 'block';
+    document.getElementById('pasteSection').scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+    const ok = state.pasteRows.filter(r => r.data || r.code === state.base).length;
+    toast(`Fetched ${ok}/${allCodes.length} rows${allCodes.length > uniqueCodes.length ? ` (${uniqueCodes.length} unique)` : ''}`, 'ok');
+  }catch(err){
+    document.getElementById('corsNotice').style.display = 'block';
+    toast('API fetch failed — see notice above', 'err');
+  }finally{
+    setLoading(btn, false);
+    hideProg('pasteProg');
   }
 }
 
-function clearPaste() {
+function clearPaste(){
   document.getElementById('pasteArea').value = '';
   document.getElementById('pasteSection').style.display = 'none';
-  S.pasteRes = [];
+  state.pasteRows = [];
 }
 
-/* ─── COPY/EXPORT — PASTE TABLE ─── */
-function copyPasteRates() {
-  const rates = S.pasteRes.map(item => {
-    if (!item.data) return 'N/A';
-    return fmt(getRate(item.data, S.rateType), decimals(getRate(item.data, S.rateType)));
+function copyPasteColumn(which){
+  const rows = [...document.querySelectorAll('#pasteTblBody tr')];
+  const idx = which === 'rate' ? 3 : 4;
+  const lines = rows.map(r => r.querySelectorAll('td')[idx]?.textContent.trim() || '').filter(Boolean);
+  copyText(lines.join('\n'));
+  toast(`${lines.length} values copied`, 'ok');
+}
+
+function copyPasteTable(){
+  const lines = [`Code\tCurrency\tRate (1 ${state.base} = ?)\tInverse (1 = ? ${state.base})\tBid\tAsk\tStatus`];
+  [...document.querySelectorAll('#pasteTblBody tr')].forEach(r => {
+    const tds = r.querySelectorAll('td');
+    if (!tds.length) return;
+    lines.push([tds[1],tds[2],tds[3],tds[4],tds[5],tds[6],tds[7]].map(td => td?.textContent.trim() || '').join('\t'));
   });
-  cp(rates.join('\n'));
-  toast(`${rates.length} rates copied`, 'ok');
+  copyText(lines.join('\n'));
+  toast('Paste table copied', 'ok');
 }
 
-function copyPasteTbl() {
-  const base = S.base;
-  const lines = [`Code\tCurrency\tRate (1 ${base}=)\tInverse\tBid\tAsk`];
-  S.pasteRes.forEach(item => {
-    if (!item.data) { lines.push(`${item.code}\t${item.name}\tN/A\tN/A\tN/A\tN/A`); return; }
-    const rate = getRate(item.data, S.rateType);
-    lines.push([
-      item.code, item.name,
-      fmt(rate, decimals(rate)),
-      fmt(1/rate, decimals(1/rate)),
-      fmt(item.data.bid, decimals(item.data.bid)),
-      fmt(item.data.ask, decimals(item.data.ask)),
-    ].join('\t'));
-  });
-  cp(lines.join('\n'));
-  toast('Paste table copied (paste into Excel)', 'ok');
-}
-
-function dlPasteCSV() {
-  const base = S.base;
+function downloadPasteCSV(){
   const date = document.getElementById('dateInput').value;
-  const lines = [`Code,Currency,Rate (1 ${base}=),Inverse (1=?${base}),Bid,Ask,Date`];
-  S.pasteRes.forEach(item => {
-    if (!item.data) { lines.push(`${item.code},"${item.name}",N/A,N/A,N/A,N/A,${date}`); return; }
-    const rate = getRate(item.data, S.rateType);
+  const lines = [`Code,Currency,Rate (1 ${state.base} = ?),Inverse (1 = ? ${state.base}),Bid,Ask,Status,Date`];
+  [...document.querySelectorAll('#pasteTblBody tr')].forEach(r => {
+    const tds = r.querySelectorAll('td');
+    if (!tds.length) return;
     lines.push([
-      item.code, `"${item.name}"`,
-      fmt(rate, decimals(rate)),
-      fmt(1/rate, decimals(1/rate)),
-      fmt(item.data.bid, decimals(item.data.bid)),
-      fmt(item.data.ask, decimals(item.data.ask)),
-      date,
+      tds[1]?.textContent.trim() || '',
+      `"${tds[2]?.textContent.trim() || ''}"`,
+      tds[3]?.textContent.trim() || '',
+      tds[4]?.textContent.trim() || '',
+      tds[5]?.textContent.trim() || '',
+      tds[6]?.textContent.trim() || '',
+      tds[7]?.textContent.trim() || '',
+      date
     ].join(','));
   });
-  dlFile(lines.join('\n'), `fx_paste_${date}.csv`, 'text/csv');
+  downloadFile(lines.join('\n'), `fx_paste_${date}.csv`, 'text/csv');
   toast('CSV downloaded', 'inf');
 }
 
-/* ─── API ─── */
-async function apiCall(base, quote, startDate, endDate) {
-  const p = new URLSearchParams({ base, quote, data_type:'general_currency_pair', start_date:startDate, end_date:endDate });
-  const res = await fetch(`${API}?${p}`);
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (!data.response?.length) return null;
-  const e = data.response[data.response.length - 1];
-  const bid = parseFloat(e.average_bid), ask = parseFloat(e.average_ask);
-  if (isNaN(bid) || isNaN(ask)) return null;
-  return { bid, ask, mid:(bid+ask)/2, date:(e.close_time||'').slice(0,10) };
+function toggleFavFromTable(code){
+  toggleFav(code, { stopPropagation: () => {} });
+  renderResults();
 }
 
-/* ─── HELPERS ─── */
-function getRate(r, type) {
-  if (!r) return 0;
-  return type==='bid' ? r.bid : type==='ask' ? r.ask : r.mid;
+function openIfAny(){
+  if (state.selectedDate && Object.keys(state.rawSelected).length) document.getElementById('resultsSection').style.display = 'block';
 }
 
-function todayStr() { return new Date().toISOString().split('T')[0]; }
-
-function prevDay(d) {
-  const dt = new Date(d); dt.setDate(dt.getDate()-1);
-  return dt.toISOString().split('T')[0];
-}
-
-function decimals(r) {
-  return 6;
-}
-
-function fmt(n, dec) {
-  if (!n || isNaN(n)) return '—';
-  return n.toLocaleString('en-US', { minimumFractionDigits:dec, maximumFractionDigits:dec });
-}
-
-function cp(text) {
-  navigator.clipboard?.writeText(text) ?? (() => {
-    const ta = Object.assign(document.createElement('textarea'), { value:text });
-    document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); ta.remove();
-  })();
-}
-
-function dlFile(content, name, mime) {
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(new Blob([content], { type:mime })),
-    download: name,
+document.addEventListener('DOMContentLoaded', async () => {
+  initDateAndBase();
+  seedTicker();
+  buildDropdown();
+  renderPresetChips();
+  refreshSelectionUI();
+  setTickerSpeed(document.getElementById('spdSlider').value);
+  updateSettingsSummary();
+  document.addEventListener('click', e => {
+    if (!document.getElementById('msWrap').contains(e.target)) closeDrop();
   });
-  a.click(); URL.revokeObjectURL(a.href);
-}
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrop(); });
 
-function setLoading(btn, on) {
-  btn.classList.toggle('loading', on);
-  btn.disabled = on;
-}
-
-function showProg(wrapId, barId) {
-  document.getElementById(wrapId).style.display = 'block';
-  document.getElementById(barId).style.width = '0%';
-}
-function hideProg(wrapId) {
-  document.getElementById(wrapId).style.display = 'none';
-}
-function setProg(barId, frac) {
-  document.getElementById(barId).style.width = (frac * 100) + '%';
-}
-
-let _toastTimer = {};
-function toast(msg, type='inf') {
-  const c = document.getElementById('toastC');
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  const ico = { ok:'✓', err:'✕', inf:'ℹ' }[type] || 'ℹ';
-  el.innerHTML = `<span>${ico}</span><span>${msg}</span>`;
-  c.appendChild(el);
-  setTimeout(() => {
-    el.style.opacity = '0'; el.style.transform = 'translateX(10px)';
-    el.style.transition = 'all 0.25s';
-    setTimeout(() => el.remove(), 260);
-  }, 3200);
-}
+  try{
+    await loadTickerHistory();
+  }catch{
+    toast('Ticker data is loading slowly or unavailable', 'inf');
+  }
+});
 </script>
 </body>
 </html>
